@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -34,30 +34,30 @@ export default function ReceptionBilling() {
   // Queries for live Supabase data
   const { data: patients = [], isLoading: isLoadingPatients } = useQuery({
     queryKey: ['patients'],
-    queryFn: () => base44.entities.Patient.list('-created_date', 300),
+    queryFn: () => ethioCareClient.entities.Patient.list('-created_date', 300),
   });
 
   const { data: visits = [] } = useQuery({
     queryKey: ['visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 300),
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 300),
     refetchInterval: 8000,
   });
 
   const { data: payments = [] } = useQuery({
     queryKey: ['payments'],
-    queryFn: () => base44.entities.Payment.list('-created_date', 300),
+    queryFn: () => ethioCareClient.entities.Payment.list('-created_date', 300),
     refetchInterval: 8000,
   });
 
   const { data: medOrders = [] } = useQuery({
     queryKey: ['medicationOrders'],
-    queryFn: () => base44.entities.MedicationOrder.list('-created_date', 300),
+    queryFn: () => ethioCareClient.entities.MedicationOrder.list('-created_date', 300),
     refetchInterval: 8000,
   });
 
   const { data: labOrders = [] } = useQuery({
     queryKey: ['labOrders'],
-    queryFn: () => base44.entities.LabOrder.list('-created_date', 300),
+    queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 300),
     refetchInterval: 8000,
   });
 
@@ -132,7 +132,7 @@ export default function ReceptionBilling() {
 
       // 1. Mark existing pending payments as paid
       for (const p of pendingPayments) {
-        const updated = await base44.entities.Payment.update(p.id, {
+        const updated = await ethioCareClient.entities.Payment.update(p.id, {
           status: 'paid',
           payment_method: paymentMethod,
           receipt_number: receiptNum,
@@ -156,7 +156,7 @@ export default function ReceptionBilling() {
       // 2. Process pending medication orders
       for (const mo of pendingMedOrders) {
         const orderAmount = Number(mo.total_price) || Number(mo.unit_price) || 0;
-        const newPay = await base44.entities.Payment.create({
+        const newPay = await ethioCareClient.entities.Payment.create({
           visit_id: mo.visit_id || patientVisit?.id || null,
           patient_id: selectedPatient.id,
           patient_name: selectedPatient.full_name,
@@ -181,7 +181,7 @@ export default function ReceptionBilling() {
         if (!primaryPaymentRecord) primaryPaymentRecord = newPay;
 
         try {
-          await base44.entities.MedicationOrder.update(mo.id, {
+          await ethioCareClient.entities.MedicationOrder.update(mo.id, {
             payment_status: 'paid',
             administration_status: 'pending',
             payment_id: newPay.id,
@@ -197,7 +197,7 @@ export default function ReceptionBilling() {
         try {
           if (mo.visit_id) {
             const isImmediate = mo.urgency === 'stat' || mo.urgency === 'urgent' || mo.order_type === 'injection';
-            await base44.entities.NurseTask.create({
+            await ethioCareClient.entities.NurseTask.create({
               visit_id: mo.visit_id,
               patient_id: selectedPatient.id,
               patient_name: selectedPatient.full_name,
@@ -225,7 +225,7 @@ export default function ReceptionBilling() {
       // 3. Process pending lab orders
       for (const lo of pendingLabOrders) {
         const labPrice = Number(lo.price) || 0;
-        const newLabPay = await base44.entities.Payment.create({
+        const newLabPay = await ethioCareClient.entities.Payment.create({
           visit_id: lo.visit_id || patientVisit?.id || null,
           patient_id: selectedPatient.id,
           patient_name: selectedPatient.full_name,
@@ -245,7 +245,7 @@ export default function ReceptionBilling() {
         if (!primaryPaymentRecord) primaryPaymentRecord = newLabPay;
 
         try {
-          await base44.entities.LabOrder.update(lo.id, {
+          await ethioCareClient.entities.LabOrder.update(lo.id, {
             payment_status: 'paid',
             test_status: 'pending'
           });
@@ -266,7 +266,7 @@ export default function ReceptionBilling() {
       // 4. Update visit billing status if applicable
       if (patientVisit?.id) {
         try {
-          await base44.entities.Visit.update(patientVisit.id, {
+          await ethioCareClient.entities.Visit.update(patientVisit.id, {
             billing_completed: true,
             registration_fee_paid: true,
             status: 'waiting'

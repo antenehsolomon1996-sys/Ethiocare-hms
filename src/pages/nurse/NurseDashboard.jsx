@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Activity, Clock, CheckCircle, Syringe, ShoppingCart, Pill, ChevronRight, AlertTriangle } from 'lucide-react';
@@ -19,12 +19,12 @@ export default function NurseDashboard() {
   const queryClient = useQueryClient();
   const { data: tasks = [] } = useQuery({
     queryKey: ['nurseTasks'],
-    queryFn: () => base44.entities.NurseTask.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.NurseTask.list('-created_date', 100),
     refetchInterval: 10000
   });
   const { data: medOrders = [] } = useQuery({
     queryKey: ['medicationOrders'],
-    queryFn: () => base44.entities.MedicationOrder.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.MedicationOrder.list('-created_date', 100),
     refetchInterval: 10000
   });
 
@@ -42,10 +42,10 @@ export default function NurseDashboard() {
 
   const handleStartMed = async (order) => {
     try {
-      await base44.entities.MedicationOrder.update(order.id, { administration_status: 'in_progress' });
-      const linked = await base44.entities.Payment.filter({ reference_id: order.id });
+      await ethioCareClient.entities.MedicationOrder.update(order.id, { administration_status: 'in_progress' });
+      const linked = await ethioCareClient.entities.Payment.filter({ reference_id: order.id });
       if (linked.length > 0) {
-        await base44.entities.Payment.update(linked[0].id, { order_status: 'administered' });
+        await ethioCareClient.entities.Payment.update(linked[0].id, { order_status: 'administered' });
       }
       queryClient.invalidateQueries({ queryKey: ['medicationOrders'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });

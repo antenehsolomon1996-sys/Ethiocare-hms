@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 
 export default function PatientsList() {
   const [search, setSearch] = useState('');
-  const { data: patients = [], isLoading } = useQuery({ queryKey: ['patients'], queryFn: () => base44.entities.Patient.list('-created_date') });
+  const { data: patients = [], isLoading } = useQuery({ queryKey: ['patients'], queryFn: () => ethioCareClient.entities.Patient.list('-created_date') });
 
   const filtered = patients.filter(p => {
     if (!search) return true;

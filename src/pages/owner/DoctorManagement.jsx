@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,7 +58,7 @@ export default function DoctorManagement() {
 
   const { data: doctors = [], isLoading } = useQuery({
     queryKey: ['doctors'],
-    queryFn: () => base44.entities.Doctor.list('-created_date', 200)
+    queryFn: () => ethioCareClient.entities.Doctor.list('-created_date', 200)
   });
 
   // Ensure unique doctors by database ID and canonical identity
@@ -120,10 +120,10 @@ export default function DoctorManagement() {
         years_experience: form.years_experience ? parseInt(form.years_experience) : 0
       };
       if (editId) {
-        await base44.entities.Doctor.update(editId, data);
+        await ethioCareClient.entities.Doctor.update(editId, data);
         toast.success('Doctor updated successfully');
       } else {
-        await base44.entities.Doctor.create(data);
+        await ethioCareClient.entities.Doctor.create(data);
         toast.success('Doctor added successfully');
       }
       queryClient.invalidateQueries({ queryKey: ['doctors'] });
@@ -139,7 +139,7 @@ export default function DoctorManagement() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await base44.entities.Doctor.delete(deleteTarget.id);
+      await ethioCareClient.entities.Doctor.delete(deleteTarget.id);
       queryClient.invalidateQueries({ queryKey: ['doctors'] });
       toast.success('Doctor removed');
       setDeleteTarget(null);
@@ -152,7 +152,7 @@ export default function DoctorManagement() {
   const toggleStatus = async (doc) => {
     try {
       const newStatus = doc.status === 'active' ? 'inactive' : 'active';
-      await base44.entities.Doctor.update(doc.id, { status: newStatus });
+      await ethioCareClient.entities.Doctor.update(doc.id, { status: newStatus });
       queryClient.invalidateQueries({ queryKey: ['doctors'] });
       toast.success(`Doctor ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
     } catch (err) {

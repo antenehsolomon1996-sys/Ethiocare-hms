@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,10 @@ export default function SearchPatient() {
   const [isSendingQueue, setIsSendingQueue] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: patients = [], isLoading } = useQuery({ queryKey: ['patients'], queryFn: () => base44.entities.Patient.list('-created_date') });
-  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => base44.entities.Visit.list('-created_date', 200) });
-  const { data: staffDoctors = [] } = useQuery({ queryKey: ['staffDoctors'], queryFn: () => base44.entities.Staff.filter({ role: 'doctor', status: 'active' }).catch(() => []) });
-  const { data: directDoctors = [] } = useQuery({ queryKey: ['directDoctors'], queryFn: () => base44.entities.Doctor.list().catch(() => []) });
+  const { data: patients = [], isLoading } = useQuery({ queryKey: ['patients'], queryFn: () => ethioCareClient.entities.Patient.list('-created_date') });
+  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 200) });
+  const { data: staffDoctors = [] } = useQuery({ queryKey: ['staffDoctors'], queryFn: () => ethioCareClient.entities.Staff.filter({ role: 'doctor', status: 'active' }).catch(() => []) });
+  const { data: directDoctors = [] } = useQuery({ queryKey: ['directDoctors'], queryFn: () => ethioCareClient.entities.Doctor.list().catch(() => []) });
   
   // Combine doctors
   const doctors = [
@@ -48,7 +48,7 @@ export default function SearchPatient() {
       const queueNum = todayVisits.length + 1;
       const matchedDoctor = doctors.find(d => d.id === selectedDoctor || d.full_name === selectedDoctor);
 
-      await base44.entities.Visit.create({
+      await ethioCareClient.entities.Visit.create({
         patient_id: selected.id,
         patient_name: selected.full_name,
         visit_date: today,
@@ -57,7 +57,7 @@ export default function SearchPatient() {
         assigned_doctor: matchedDoctor?.full_name || selectedDoctor || null,
         assigned_doctor_id: matchedDoctor?.id || null
       });
-      await base44.entities.Payment.create({
+      await ethioCareClient.entities.Payment.create({
         patient_id: selected.id,
         patient_name: selected.full_name,
         payment_type: 'consultation',

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useDoctorContext } from '@/lib/DoctorContext';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
@@ -14,13 +14,13 @@ export default function DoctorDashboard() {
 
   const { data: visits = [] } = useQuery({
     queryKey: ['visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 500),
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 500),
     refetchInterval: 15000
   });
 
   const { data: labOrders = [] } = useQuery({
     queryKey: ['labOrders'],
-    queryFn: () => base44.entities.LabOrder.list('-created_date', 200),
+    queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 200),
     refetchInterval: 15000
   });
 

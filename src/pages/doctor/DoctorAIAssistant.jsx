@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useDoctorContext } from '@/lib/DoctorContext';
 import AIClinicalAssistant from '@/components/doctor/AIClinicalAssistant';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,7 +16,7 @@ export default function DoctorAIAssistant() {
   // Fetch active doctor visits / queue
   const { data: visits = [], isLoading, refetch } = useQuery({
     queryKey: ['doctor-ai-visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 100),
   });
 
   const activeVisit = visits.find(v => v.id === selectedVisitId);

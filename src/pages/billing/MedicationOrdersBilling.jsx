@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -81,14 +81,14 @@ export default function MedicationOrdersBilling() {
     isFetching
   } = useQuery({
     queryKey: ['medicationOrders'],
-    queryFn: () => base44.entities.MedicationOrder.list('-created_date', 300),
+    queryFn: () => ethioCareClient.entities.MedicationOrder.list('-created_date', 300),
     refetchInterval: 10000
   });
 
   // 2. Fetch patients to map UUIDs to human-readable Patient IDs (e.g. PT-260915-1001)
   const { data: patients = [] } = useQuery({
     queryKey: ['patients'],
-    queryFn: () => base44.entities.Patient.list('-created_date', 300)
+    queryFn: () => ethioCareClient.entities.Patient.list('-created_date', 300)
   });
 
   // Map patient_id UUID to full patient record
@@ -103,7 +103,7 @@ export default function MedicationOrdersBilling() {
 
   // Realtime subscription to live Supabase updates
   useEffect(() => {
-    const unsubscribe = base44.entities.MedicationOrder.subscribe(() => {
+    const unsubscribe = ethioCareClient.entities.MedicationOrder.subscribe(() => {
       queryClient.invalidateQueries({ queryKey: ['medicationOrders'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
     });
@@ -219,13 +219,13 @@ export default function MedicationOrdersBilling() {
       const paidDate = format(new Date(), 'yyyy-MM-dd');
 
       // 1. Check if an existing pending payment record is linked
-      const existingPayments = await base44.entities.Payment.filter({ reference_id: paymentOrder.id });
+      const existingPayments = await ethioCareClient.entities.Payment.filter({ reference_id: paymentOrder.id });
       const existingPending = existingPayments.find(p => p.status === 'pending');
       let paymentRecord = null;
       let paymentId = null;
 
       if (existingPending) {
-        paymentRecord = await base44.entities.Payment.update(existingPending.id, {
+        paymentRecord = await ethioCareClient.entities.Payment.update(existingPending.id, {
           amount,
           status: 'paid',
           payment_method: paymentMethod,
@@ -236,7 +236,7 @@ export default function MedicationOrdersBilling() {
         });
         paymentId = existingPending.id;
       } else {
-        paymentRecord = await base44.entities.Payment.create({
+        paymentRecord = await ethioCareClient.entities.Payment.create({
           visit_id: paymentOrder.visit_id || null,
           patient_id: paymentOrder.patient_id,
           patient_name: paymentOrder.patient_name,
@@ -265,7 +265,7 @@ export default function MedicationOrdersBilling() {
       }
 
       // 2. Update Medication Order status to 'paid' and administration to 'pending'
-      await base44.entities.MedicationOrder.update(paymentOrder.id, {
+      await ethioCareClient.entities.MedicationOrder.update(paymentOrder.id, {
         payment_status: 'paid',
         administration_status: 'pending',
         payment_id: paymentId,
@@ -279,10 +279,10 @@ export default function MedicationOrdersBilling() {
       try {
         if (paymentOrder.visit_id && paymentOrder.patient_id) {
           const isImmediate = paymentOrder.urgency === 'stat' || paymentOrder.urgency === 'urgent' || paymentOrder.order_type === 'injection';
-          const existingTasks = await base44.entities.NurseTask.filter({ visit_id: paymentOrder.visit_id });
+          const existingTasks = await ethioCareClient.entities.NurseTask.filter({ visit_id: paymentOrder.visit_id });
           const taskExists = existingTasks.some(t => t.description?.includes(paymentOrder.item_name));
           if (!taskExists) {
-            await base44.entities.NurseTask.create({
+            await ethioCareClient.entities.NurseTask.create({
               visit_id: paymentOrder.visit_id,
               patient_id: paymentOrder.patient_id,
               patient_name: paymentOrder.patient_name,
@@ -350,15 +350,15 @@ export default function MedicationOrdersBilling() {
       return;
     }
     try {
-      await base44.entities.MedicationOrder.update(order.id, {
+      await ethioCareClient.entities.MedicationOrder.update(order.id, {
         payment_status: 'waived',
         administration_status: 'pending',
         notes: `Payment waived by ${user?.full_name || 'Accountant'} on ${format(new Date(), 'yyyy-MM-dd')}`
       });
 
-      const linked = await base44.entities.Payment.filter({ reference_id: order.id });
+      const linked = await ethioCareClient.entities.Payment.filter({ reference_id: order.id });
       if (linked.length > 0) {
-        await base44.entities.Payment.update(linked[0].id, {
+        await ethioCareClient.entities.Payment.update(linked[0].id, {
           status: 'paid',
           order_status: 'waived',
           paid_by: user?.full_name || 'Hospital Accountant',

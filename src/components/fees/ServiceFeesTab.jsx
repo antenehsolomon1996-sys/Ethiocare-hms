@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,7 +37,7 @@ export default function ServiceFeesTab({ category, title }) {
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
+    queryFn: () => ethioCareClient.entities.Service.list()
   });
 
   const validCategories = category === 'nursing' ? NURSING_CATEGORIES : REGISTRATION_CATEGORIES;
@@ -100,7 +100,7 @@ export default function ServiceFeesTab({ category, title }) {
     setSaving(true);
     try {
       if (editing) {
-        await base44.entities.Service.update(editing.id, payload);
+        await ethioCareClient.entities.Service.update(editing.id, payload);
         toast.success(`Fee "${form.name}" updated successfully`);
         logAudit({
           userName: user?.full_name || 'Hospital Owner',
@@ -112,7 +112,7 @@ export default function ServiceFeesTab({ category, title }) {
           recordName: payload.name
         });
       } else {
-        const created = await base44.entities.Service.create(payload);
+        const created = await ethioCareClient.entities.Service.create(payload);
         toast.success(`Fee "${form.name}" created successfully`);
         logAudit({
           userName: user?.full_name || 'Hospital Owner',
@@ -137,7 +137,7 @@ export default function ServiceFeesTab({ category, title }) {
   const handleDelete = async (s) => {
     if (!confirm(`Are you sure you want to delete "${s.name}"?`)) return;
     try {
-      await base44.entities.Service.delete(s.id);
+      await ethioCareClient.entities.Service.delete(s.id);
       queryClient.invalidateQueries({ queryKey: ['services'] });
       toast.success(`Fee "${s.name}" deleted`);
       logAudit({
@@ -157,7 +157,7 @@ export default function ServiceFeesTab({ category, title }) {
   const toggleStatus = async (s) => {
     const newStatus = s.status === 'active' ? 'inactive' : 'active';
     try {
-      await base44.entities.Service.update(s.id, { status: newStatus });
+      await ethioCareClient.entities.Service.update(s.id, { status: newStatus });
       queryClient.invalidateQueries({ queryKey: ['services'] });
       toast.success(`${s.name} is now ${newStatus === 'active' ? 'Active' : 'Disabled'}`);
       logAudit({

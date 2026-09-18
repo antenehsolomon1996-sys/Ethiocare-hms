@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
-// Mapping from Base44 entity names to Supabase table names
+// Mapping from Entity names to Supabase table names
 export const TABLE_MAP: Record<string, string> = {
   User: 'profiles',
   Staff: 'staff',
@@ -154,7 +154,7 @@ function formatSupabaseError(error: any, action: string, table: string): Error {
 function sanitizePayload(raw: Record<string, any>, isUpdate = false): Record<string, any> {
   const payload = { ...raw };
 
-  // Remove Base44 virtual/read-only timestamp properties
+  // Remove virtual/read-only timestamp properties
   delete payload.created_date;
   delete payload.updated_date;
   if (isUpdate) {

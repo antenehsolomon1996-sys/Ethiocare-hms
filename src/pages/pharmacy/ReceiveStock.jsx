@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useAuth } from '@/lib/AuthContext';
 import { stockReceiveService } from '@/services/stockReceive.service';
 import { formatDateEAT, getTodayEATString } from '@/lib/dateUtils';
@@ -65,7 +65,7 @@ export default function ReceiveStock() {
   // Load existing medicines catalog for search/autocomplete
   const { data: medicines = [] } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list('name', 300)
+    queryFn: () => ethioCareClient.entities.Medicine.list('name', 300)
   });
 
   // Load past invoices

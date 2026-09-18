@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useDoctorContext } from '@/lib/DoctorContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Stethoscope, ChevronDown } from 'lucide-react';
@@ -10,7 +10,7 @@ export default function DoctorSelector({ collapsed }) {
 
   const { data: doctors = [] } = useQuery({
     queryKey: ['doctors'],
-    queryFn: () => base44.entities.Doctor.list(),
+    queryFn: () => ethioCareClient.entities.Doctor.list(),
   });
 
   const activeDoctors = useMemo(() => {

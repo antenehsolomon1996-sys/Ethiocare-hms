@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatCard from '@/components/common/StatCard';
 import { 
   Users, DollarSign, FlaskConical, Pill, TrendingUp, 
@@ -14,13 +14,13 @@ import {
 const COLORS = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444', '#10b981', '#f97316', '#6366f1'];
 
 export default function Reports() {
-  const { data: patients = [] } = useQuery({ queryKey: ['patients'], queryFn: () => base44.entities.Patient.list() });
-  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => base44.entities.Visit.list('-created_date', 200) });
-  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list('-created_date', 200) });
-  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => base44.entities.LabOrder.list('-created_date', 200) });
-  const { data: prescriptions = [] } = useQuery({ queryKey: ['prescriptions'], queryFn: () => base44.entities.Prescription.list('-created_date', 200) });
-  const { data: staff = [] } = useQuery({ queryKey: ['staff'], queryFn: () => base44.entities.Staff.list() });
-  const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: () => base44.entities.Doctor.list() });
+  const { data: patients = [] } = useQuery({ queryKey: ['patients'], queryFn: () => ethioCareClient.entities.Patient.list() });
+  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 200) });
+  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => ethioCareClient.entities.Payment.list('-created_date', 200) });
+  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 200) });
+  const { data: prescriptions = [] } = useQuery({ queryKey: ['prescriptions'], queryFn: () => ethioCareClient.entities.Prescription.list('-created_date', 200) });
+  const { data: staff = [] } = useQuery({ queryKey: ['staff'], queryFn: () => ethioCareClient.entities.Staff.list() });
+  const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: () => ethioCareClient.entities.Doctor.list() });
 
   const today = startOfDay(new Date());
   const weekStart = startOfWeek(new Date());

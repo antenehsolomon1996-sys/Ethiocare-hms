@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,12 +83,12 @@ export default function StaffManagement() {
 
   const { data: staff = [], isLoading } = useQuery({
     queryKey: ['staff'],
-    queryFn: () => base44.entities.Staff.list('-created_date', 200)
+    queryFn: () => ethioCareClient.entities.Staff.list('-created_date', 200)
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => ethioCareClient.entities.User.list()
   });
 
   const getUserStatus = (email) => {
@@ -148,12 +148,12 @@ export default function StaffManagement() {
     setSaving(true);
     try {
       if (editId) {
-        await base44.entities.Staff.update(editId, form);
+        await ethioCareClient.entities.Staff.update(editId, form);
         toast.success('Staff member updated');
         setFormOpen(false);
       } else {
         const code = generateActivationCode();
-        const newStaff = await base44.entities.Staff.create({
+        const newStaff = await ethioCareClient.entities.Staff.create({
           ...form,
           activation_code: code,
           activation_used: false,
@@ -181,7 +181,7 @@ export default function StaffManagement() {
   const handleRegenerateCode = async (member) => {
     try {
       const code = generateActivationCode();
-      await base44.entities.Staff.update(member.id, {
+      await ethioCareClient.entities.Staff.update(member.id, {
         activation_code: code,
         activation_used: false,
         password_set: false,
@@ -199,7 +199,7 @@ export default function StaffManagement() {
   const handleToggleStatus = async (member) => {
     try {
       const newStatus = member.status === 'active' ? 'suspended' : 'active';
-      await base44.entities.Staff.update(member.id, { status: newStatus });
+      await ethioCareClient.entities.Staff.update(member.id, { status: newStatus });
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       toast.success(newStatus === 'active' ? 'Staff reactivated' : 'Staff suspended');
     } catch (err) {
@@ -221,7 +221,7 @@ export default function StaffManagement() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await base44.entities.Staff.delete(deleteTarget.id);
+      await ethioCareClient.entities.Staff.delete(deleteTarget.id);
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       toast.success('Staff member removed');
       setDeleteTarget(null);

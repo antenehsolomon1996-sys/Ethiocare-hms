@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,25 +12,25 @@ import { format } from 'date-fns';
 export default function PatientHistoryView({ patientId, patientName }) {
   const { data: history = [], isLoading } = useQuery({
     queryKey: ['patientHistory', patientId],
-    queryFn: () => base44.entities.PatientHistory.filter({ patient_id: patientId }, '-visit_date', 100),
+    queryFn: () => ethioCareClient.entities.PatientHistory.filter({ patient_id: patientId }, '-visit_date', 100),
     enabled: !!patientId
   });
 
   const { data: visits = [] } = useQuery({
     queryKey: ['patientVisits', patientId],
-    queryFn: () => base44.entities.Visit.filter({ patient_id: patientId }, '-created_date', 50),
+    queryFn: () => ethioCareClient.entities.Visit.filter({ patient_id: patientId }, '-created_date', 50),
     enabled: !!patientId
   });
 
   const { data: labOrders = [] } = useQuery({
     queryKey: ['patientLabs', patientId],
-    queryFn: () => base44.entities.LabOrder.filter({ patient_id: patientId }, '-created_date', 50),
+    queryFn: () => ethioCareClient.entities.LabOrder.filter({ patient_id: patientId }, '-created_date', 50),
     enabled: !!patientId
   });
 
   const { data: prescriptions = [] } = useQuery({
     queryKey: ['patientPrescriptions', patientId],
-    queryFn: () => base44.entities.Prescription.filter({ patient_id: patientId }, '-created_date', 50),
+    queryFn: () => ethioCareClient.entities.Prescription.filter({ patient_id: patientId }, '-created_date', 50),
     enabled: !!patientId
   });
 

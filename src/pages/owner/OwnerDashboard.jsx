@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
 import {
@@ -18,12 +18,12 @@ import { financeService } from '@/services/finance.service';
 const COLORS = ['hsl(222 85% 50%)', 'hsl(190 85% 45%)', 'hsl(280 55% 55%)', 'hsl(35 90% 50%)', 'hsl(0 75% 55%)', 'hsl(142 65% 42%)'];
 
 export default function OwnerDashboard() {
-  const { data: patients = [] } = useQuery({ queryKey: ['patients'], queryFn: () => base44.entities.Patient.list() });
-  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => base44.entities.Visit.list('-created_date', 100) });
-  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list('-created_date', 100) });
-  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => base44.entities.LabOrder.list('-created_date', 50) });
-  const { data: staff = [] } = useQuery({ queryKey: ['staff'], queryFn: () => base44.entities.Staff.list() });
-  const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: () => base44.entities.Doctor.list() });
+  const { data: patients = [] } = useQuery({ queryKey: ['patients'], queryFn: () => ethioCareClient.entities.Patient.list() });
+  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 100) });
+  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => ethioCareClient.entities.Payment.list('-created_date', 100) });
+  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 50) });
+  const { data: staff = [] } = useQuery({ queryKey: ['staff'], queryFn: () => ethioCareClient.entities.Staff.list() });
+  const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: () => ethioCareClient.entities.Doctor.list() });
 
   const { data: finSummary } = useQuery({
     queryKey: ['financialSummary'],

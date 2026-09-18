@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,27 +38,27 @@ export default function RegisterPatient() {
   // Queries for live data
   const { data: staff = [] } = useQuery({
     queryKey: ['staff'],
-    queryFn: () => base44.entities.Staff.list()
+    queryFn: () => ethioCareClient.entities.Staff.list()
   });
 
   const { data: doctorEntities = [] } = useQuery({
     queryKey: ['doctors'],
-    queryFn: () => base44.entities.Doctor.list()
+    queryFn: () => ethioCareClient.entities.Doctor.list()
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
+    queryFn: () => ethioCareClient.entities.Service.list()
   });
 
   const { data: patients = [] } = useQuery({
     queryKey: ['patients'],
-    queryFn: () => base44.entities.Patient.list('-created_date', 500)
+    queryFn: () => ethioCareClient.entities.Patient.list('-created_date', 500)
   });
 
   const { data: visits = [] } = useQuery({
     queryKey: ['visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 500)
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 500)
   });
 
   const doctors = useMemo(() => buildDoctorList(doctorEntities, staff), [doctorEntities, staff]);
@@ -172,7 +172,7 @@ export default function RegisterPatient() {
       // If linking to an existing patient, update their contact info and use existing record
       if (existingPatientId || matchedExistingPatient) {
         const targetId = existingPatientId || matchedExistingPatient.id;
-        patientRecord = await base44.entities.Patient.update(targetId, {
+        patientRecord = await ethioCareClient.entities.Patient.update(targetId, {
           full_name: form.full_name.trim(),
           gender: form.gender,
           age: form.age ? parseInt(form.age) : null,
@@ -186,7 +186,7 @@ export default function RegisterPatient() {
       } else {
         // Create brand new patient
         const patientId = generatePatientId();
-        patientRecord = await base44.entities.Patient.create({
+        patientRecord = await ethioCareClient.entities.Patient.create({
           full_name: form.full_name.trim(),
           gender: form.gender,
           age: form.age ? parseInt(form.age) : null,
@@ -202,7 +202,7 @@ export default function RegisterPatient() {
       }
 
       // Create registration payment record (status: pending until cashier receives payment)
-      await base44.entities.Payment.create({
+      await ethioCareClient.entities.Payment.create({
         patient_id: patientRecord.id,
         patient_name: form.full_name.trim(),
         payment_type: 'registration',
@@ -229,12 +229,12 @@ export default function RegisterPatient() {
     if (!created) return;
     setIsSubmitting(true);
     try {
-      const allVisits = await base44.entities.Visit.list('-created_date', 200);
+      const allVisits = await ethioCareClient.entities.Visit.list('-created_date', 200);
       const today = format(new Date(), 'yyyy-MM-dd');
       const todayVisits = allVisits.filter(v => v.visit_date === today);
       const queueNum = todayVisits.length + 1;
 
-      const newVisit = await base44.entities.Visit.create({
+      const newVisit = await ethioCareClient.entities.Visit.create({
         patient_id: created.id,
         patient_name: created.full_name,
         visit_date: today,
@@ -248,13 +248,13 @@ export default function RegisterPatient() {
       });
 
       // Link pending registration payment to this visit
-      const payments = await base44.entities.Payment.filter({
+      const payments = await ethioCareClient.entities.Payment.filter({
         patient_id: created.id,
         reference_type: 'registration',
         status: 'pending'
       });
       if (payments.length > 0) {
-        await base44.entities.Payment.update(payments[0].id, { visit_id: newVisit.id });
+        await ethioCareClient.entities.Payment.update(payments[0].id, { visit_id: newVisit.id });
       }
 
       queryClient.invalidateQueries({ queryKey: ['visits'] });

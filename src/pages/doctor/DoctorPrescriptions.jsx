@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useDoctorContext } from '@/lib/DoctorContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ export default function DoctorPrescriptions() {
 
   const { data: prescriptions = [], isLoading, refetch } = useQuery({
     queryKey: ['doctor-prescriptions'],
-    queryFn: () => base44.entities.Prescription.list('-created_date', 200),
+    queryFn: () => ethioCareClient.entities.Prescription.list('-created_date', 200),
   });
 
   const doctorId = selectedDoctor?.id;

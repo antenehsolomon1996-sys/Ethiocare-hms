@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +40,7 @@ export default function MedicationAdministration() {
   // Only fetch orders that are PAID or WAIVED — never pending_payment
   const { data: allOrders = [], isLoading } = useQuery({
     queryKey: ['medicationOrders'],
-    queryFn: () => base44.entities.MedicationOrder.list('-created_date', 300),
+    queryFn: () => ethioCareClient.entities.MedicationOrder.list('-created_date', 300),
     refetchInterval: 8000
   });
 
@@ -52,7 +52,7 @@ export default function MedicationAdministration() {
 
   // Realtime subscription — immediately reflects billing approvals and status changes
   useEffect(() => {
-    const unsubscribe = base44.entities.MedicationOrder.subscribe(() => {
+    const unsubscribe = ethioCareClient.entities.MedicationOrder.subscribe(() => {
       queryClient.invalidateQueries({ queryKey: ['medicationOrders'] });
     });
     return unsubscribe;
@@ -80,11 +80,11 @@ export default function MedicationAdministration() {
   const handleStart = async (order) => {
     queryClient.setQueryData(['medicationOrders'], (old) => old.map(o => o.id === order.id ? { ...o, administration_status: 'in_progress' } : o));
     try {
-      await base44.entities.MedicationOrder.update(order.id, { administration_status: 'in_progress' });
+      await ethioCareClient.entities.MedicationOrder.update(order.id, { administration_status: 'in_progress' });
       // Sync linked payment record
-      const linked = await base44.entities.Payment.filter({ reference_id: order.id });
+      const linked = await ethioCareClient.entities.Payment.filter({ reference_id: order.id });
       if (linked.length > 0) {
-        await base44.entities.Payment.update(linked[0].id, { order_status: 'administered' });
+        await ethioCareClient.entities.Payment.update(linked[0].id, { order_status: 'administered' });
       }
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       logAudit({
@@ -106,16 +106,16 @@ export default function MedicationAdministration() {
     if (!selected) return;
     setIsCompleting(true);
     try {
-      await base44.entities.MedicationOrder.update(selected.id, {
+      await ethioCareClient.entities.MedicationOrder.update(selected.id, {
         administration_status: 'completed',
         administered_by: user?.full_name || 'Staff Nurse',
         administered_date: format(new Date(), 'yyyy-MM-dd'),
         administration_notes: adminNotes?.trim() || null
       });
       // Sync linked payment record — completed medication stays in history
-      const linked = await base44.entities.Payment.filter({ reference_id: selected.id });
+      const linked = await ethioCareClient.entities.Payment.filter({ reference_id: selected.id });
       if (linked.length > 0) {
-        await base44.entities.Payment.update(linked[0].id, { order_status: 'completed' });
+        await ethioCareClient.entities.Payment.update(linked[0].id, { order_status: 'completed' });
       }
       queryClient.invalidateQueries({ queryKey: ['medicationOrders'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -137,7 +137,7 @@ export default function MedicationAdministration() {
 
   const handleRefuse = async (order) => {
     try {
-      await base44.entities.MedicationOrder.update(order.id, {
+      await ethioCareClient.entities.MedicationOrder.update(order.id, {
         administration_status: 'refused',
         administered_by: user?.full_name || 'Staff Nurse',
         administration_notes: 'Patient refused'

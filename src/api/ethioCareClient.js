@@ -20,8 +20,8 @@ const entitiesProxy = new Proxy({}, {
   }
 });
 
-// Drop-in Supabase-backed client
-export const base44 = {
+// Drop-in Supabase-backed client for EthioCare HMS
+export const ethioCareClient = {
   entities: entitiesProxy,
   auth: {
     me: async () => {
@@ -144,3 +144,6 @@ export const base44 = {
     }
   }
 };
+
+export const hmsClient = ethioCareClient;
+export default ethioCareClient;

@@ -1,6 +1,6 @@
 # EthioCare HMS - Supabase Migration Complete Checklist
 
-The Base44-dependent frontend project has been successfully migrated to a production-ready, standalone Hospital Management System backed by **Supabase PostgreSQL, Supabase Authentication, Supabase Storage, and Supabase Row Level Security (RLS)**.
+The frontend project has been successfully migrated to a production-ready, standalone Hospital Management System backed by **Supabase PostgreSQL, Supabase Authentication, Supabase Storage, and Supabase Row Level Security (RLS)**.
 
 ## Migration Status Overview
 
@@ -13,8 +13,8 @@ The Base44-dependent frontend project has been successfully migrated to a produc
 - [x] **Role-Based Access Control (RBAC)**: Secure multi-portal guards for all 7 roles: `owner`, `admin`, `receptionist`, `doctor`, `nurse`, `lab_technician`, `pharmacist`, and `accountant`.
 - [x] **Row Level Security (RLS)**: Strict RLS policies enabled on all 16 tables and storage buckets preventing unauthorized cross-tenant or unauthenticated access.
 - [x] **Supabase Storage**: Configured `lab-results` and `medicine-images` storage buckets with file upload service (`src/services/storage.service.ts`).
-- [x] **Clean API & Repository Layer**: Created domain services (`auth.service.ts`, `database.service.ts`, `storage.service.ts`, `database.types.ts`) and zero-dependency adapter (`src/api/base44Client.js`) that translates Base44 methods (`list`, `filter`, `create`, `update`, `delete`, `subscribe`) to Supabase PostgREST queries with field normalization.
-- [x] **Base44 SDK Removal**: Removed `@base44/sdk` and `@base44/vite-plugin` from `package.json` and `vite.config.js`. Zero external Base44 network dependencies remain.
+- [x] **Clean API & Repository Layer**: Created domain services (`auth.service.ts`, `database.service.ts`, `storage.service.ts`, `database.types.ts`) and zero-dependency client adapter (`src/api/ethioCareClient.js`) that translates entity methods (`list`, `filter`, `create`, `update`, `delete`, `subscribe`) to Supabase PostgREST queries with field normalization.
+- [x] **Standalone Architecture**: Zero external proprietary platform dependencies. Standalone React + Supabase implementation.
 - [x] **CRUD Operations**: Verified all CRUD workflows across all 7 portals (Owner, Reception, Doctor, Nurse, Lab, Pharmacy, Billing).
 - [x] **Real-Time Features**: Enabled Supabase Realtime channel subscriptions on clinical queues (`visits`), nurse tasks (`nurse_tasks`), and medication orders (`medication_orders`).
 - [x] **Dashboards & Reports**: Real-time aggregation of today's patient visits, daily revenue, active doctor counts, disease frequencies, and inventory status.

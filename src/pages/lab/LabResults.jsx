@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import { format } from 'date-fns';
 
 export default function LabResults() {
-  const { data: labOrders = [], isLoading } = useQuery({ queryKey: ['labOrders'], queryFn: () => base44.entities.LabOrder.list('-created_date', 200) });
+  const { data: labOrders = [], isLoading } = useQuery({ queryKey: ['labOrders'], queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 200) });
   const completed = labOrders.filter(o => o.test_status === 'completed');
 
   const columns = [

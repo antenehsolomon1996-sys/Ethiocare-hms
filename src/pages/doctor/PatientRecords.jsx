@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Input } from '@/components/ui/input';
@@ -14,11 +14,11 @@ export default function PatientRecords() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
 
-  const { data: patients = [], isLoading } = useQuery({ queryKey: ['patients'], queryFn: () => base44.entities.Patient.list('-created_date') });
-  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => base44.entities.Visit.list('-created_date', 200) });
-  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => base44.entities.LabOrder.list('-created_date', 200) });
-  const { data: prescriptions = [] } = useQuery({ queryKey: ['prescriptions'], queryFn: () => base44.entities.Prescription.list('-created_date', 200) });
-  const { data: vitals = [] } = useQuery({ queryKey: ['vitals'], queryFn: () => base44.entities.Vital.list('-created_date', 200) });
+  const { data: patients = [], isLoading } = useQuery({ queryKey: ['patients'], queryFn: () => ethioCareClient.entities.Patient.list('-created_date') });
+  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 200) });
+  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 200) });
+  const { data: prescriptions = [] } = useQuery({ queryKey: ['prescriptions'], queryFn: () => ethioCareClient.entities.Prescription.list('-created_date', 200) });
+  const { data: vitals = [] } = useQuery({ queryKey: ['vitals'], queryFn: () => ethioCareClient.entities.Vital.list('-created_date', 200) });
 
   const myDoctorId = selectedDoctor?.id;
 

@@ -10,7 +10,7 @@ import { Menu, Bell, User, Settings, Trash2, ChevronLeft, ShieldAlert, Search, B
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTabNavigation } from '@/lib/TabNavigationContext';
@@ -166,8 +166,8 @@ export default function PortalLayout({ role }) {
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
-      if (typeof base44.auth.deleteAccount === 'function') {
-        await base44.auth.deleteAccount();
+      if (typeof ethioCareClient.auth.deleteAccount === 'function') {
+        await ethioCareClient.auth.deleteAccount();
       }
       window.location.href = '/login';
     } catch {

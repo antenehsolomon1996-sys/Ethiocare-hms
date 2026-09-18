@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatusBadge from '@/components/common/StatusBadge';
 import StatCard from '@/components/common/StatCard';
 import { Button } from '@/components/ui/button';
@@ -53,7 +53,7 @@ export default function Inventory() {
   // Load medicines
   const { data: medicines = [], isLoading } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list('-created_date', 300)
+    queryFn: () => ethioCareClient.entities.Medicine.list('-created_date', 300)
   });
 
   // Load inventory movements
@@ -117,7 +117,7 @@ export default function Inventory() {
       const movementType = isPositive ? 'ADJUSTMENT_IN' : 'ADJUSTMENT_OUT';
 
       const status = computeStatus({ ...stockAdjust.med, quantity: newQty });
-      await base44.entities.Medicine.update(stockAdjust.med.id, { quantity: newQty, status });
+      await ethioCareClient.entities.Medicine.update(stockAdjust.med.id, { quantity: newQty, status });
 
       // Record movement
       if (diff > 0) {

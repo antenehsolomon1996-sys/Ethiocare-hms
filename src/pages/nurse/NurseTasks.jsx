@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -19,14 +19,14 @@ export default function NurseTasks() {
 
   const { data: tasks = [], isLoading } = useQuery({ 
     queryKey: ['nurseTasks'], 
-    queryFn: () => base44.entities.NurseTask.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.NurseTask.list('-created_date', 100),
     refetchInterval: 10000
   });
 
   const handleStart = async (task) => {
     queryClient.setQueryData(['nurseTasks'], (old) => old.map(t => t.id === task.id ? { ...t, status: 'in_progress' } : t));
     try {
-      await base44.entities.NurseTask.update(task.id, { status: 'in_progress' });
+      await ethioCareClient.entities.NurseTask.update(task.id, { status: 'in_progress' });
       toast.success('Task started');
     } catch {
       queryClient.invalidateQueries({ queryKey: ['nurseTasks'] });
@@ -41,7 +41,7 @@ export default function NurseTasks() {
     if (!selected) return;
     setIsCompleting(true);
     try {
-      await base44.entities.NurseTask.update(selected.id, { 
+      await ethioCareClient.entities.NurseTask.update(selected.id, { 
         status: 'completed', 
         notes: notes?.trim() || null, 
         completed_by: user?.full_name || 'Staff Nurse',

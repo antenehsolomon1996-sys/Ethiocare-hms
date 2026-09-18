@@ -1,0 +1,15 @@
+{
+  "short_name": "EthioCare HMS",
+  "name": "EthioCare Hospital Management System",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#0D9488",
+  "display": "standalone"
+}

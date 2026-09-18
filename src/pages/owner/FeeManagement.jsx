@@ -6,7 +6,7 @@ import MedicineFeesTab from '@/components/fees/MedicineFeesTab';
 import LabTestFeesTab from '@/components/fees/LabTestFeesTab';
 import StatCard from '@/components/common/StatCard';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,17 +19,17 @@ export default function FeeManagement() {
   const queryClient = useQueryClient();
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
+    queryFn: () => ethioCareClient.entities.Service.list()
   });
 
   const { data: labTests = [] } = useQuery({
     queryKey: ['labTests'],
-    queryFn: () => base44.entities.LabTest.list()
+    queryFn: () => ethioCareClient.entities.LabTest.list()
   });
 
   const { data: medicines = [] } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list()
+    queryFn: () => ethioCareClient.entities.Medicine.list()
   });
 
   const tariffs = patientFeeService.getRegistrationTariffs(services);

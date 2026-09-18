@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { pharmacySaleService } from '@/services/pharmacySale.service';
 import { salesReturnService } from '@/services/salesReturn.service';
 import { movementService } from '@/services/movement.service';
@@ -28,13 +28,13 @@ export default function PharmacyReports() {
   // Load medicines
   const { data: medicines = [], isLoading: isLoadingMeds, refetch: refetchMeds } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list('name', 500)
+    queryFn: () => ethioCareClient.entities.Medicine.list('name', 500)
   });
 
   // Load prescriptions (Hospital Dispensing)
   const { data: prescriptions = [], isLoading: isLoadingRx, refetch: refetchRx } = useQuery({
     queryKey: ['prescriptions'],
-    queryFn: () => base44.entities.Prescription.list('-created_date', 500)
+    queryFn: () => ethioCareClient.entities.Prescription.list('-created_date', 500)
   });
 
   // Load Walk-In Sales

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useAuth } from '@/lib/AuthContext';
 import { pharmacySaleService } from '@/services/pharmacySale.service';
 import { pharmacySettingsService, DEFAULT_PHARMACY_SETTINGS } from '@/services/pharmacySettings.service';
@@ -74,7 +74,7 @@ export default function WalkInSales() {
   // Fetch live medicines catalog
   const { data: medicines = [], isLoading: isLoadingMeds } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list('name', 300)
+    queryFn: () => ethioCareClient.entities.Medicine.list('name', 300)
   });
 
   // Filtered search results for top search bar

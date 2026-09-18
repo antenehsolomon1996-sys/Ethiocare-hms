@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
 import { DollarSign, Clock, CheckCircle, CreditCard, Syringe, ChevronRight } from 'lucide-react';
@@ -8,8 +8,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 export default function BillingDashboard() {
-  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.Payment.list('-created_date', 100), refetchInterval: 10000 });
-  const { data: medOrders = [] } = useQuery({ queryKey: ['medicationOrders'], queryFn: () => base44.entities.MedicationOrder.list('-created_date', 100), refetchInterval: 10000 });
+  const { data: payments = [] } = useQuery({ queryKey: ['payments'], queryFn: () => ethioCareClient.entities.Payment.list('-created_date', 100), refetchInterval: 10000 });
+  const { data: medOrders = [] } = useQuery({ queryKey: ['medicationOrders'], queryFn: () => ethioCareClient.entities.MedicationOrder.list('-created_date', 100), refetchInterval: 10000 });
   const pendingMedOrders = medOrders.filter(o => o.payment_status === 'pending_payment');
 
   const today = startOfDay(new Date());

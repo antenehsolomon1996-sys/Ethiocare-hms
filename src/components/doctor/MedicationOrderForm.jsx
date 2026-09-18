@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,7 +74,7 @@ export default function MedicationOrderForm({ visit, doctor, existingOrders = []
   // Fetch live payment records for this visit to reflect billing status
   const { data: visitPayments = [] } = useQuery({
     queryKey: ['payments', 'visit', visit?.id],
-    queryFn: () => base44.entities.Payment.filter({ visit_id: visit.id }),
+    queryFn: () => ethioCareClient.entities.Payment.filter({ visit_id: visit.id }),
     enabled: !!visit?.id,
     refetchInterval: 8000
   });
@@ -82,7 +82,7 @@ export default function MedicationOrderForm({ visit, doctor, existingOrders = []
   // Fetch medicines to auto-suggest prices from configured values
   const { data: medicines = [] } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list()
+    queryFn: () => ethioCareClient.entities.Medicine.list()
   });
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
@@ -107,7 +107,7 @@ export default function MedicationOrderForm({ visit, doctor, existingOrders = []
 
     try {
       // Step 1: Create the MedicationOrder (the primary order record)
-      const order = await base44.entities.MedicationOrder.create({
+      const order = await ethioCareClient.entities.MedicationOrder.create({
         visit_id: visit.id,
         patient_id: visit.patient_id,
         patient_name: visit.patient_name,
@@ -130,7 +130,7 @@ export default function MedicationOrderForm({ visit, doctor, existingOrders = []
 
       // Step 2: Create linked billing record with full medication details
       // The Order ID is the primary relationship key across Doctor → Billing → Nurse
-      await base44.entities.Payment.create({
+      await ethioCareClient.entities.Payment.create({
         visit_id: visit.id,
         patient_id: visit.patient_id,
         patient_name: visit.patient_name,

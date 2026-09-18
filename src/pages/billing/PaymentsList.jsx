@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -96,14 +96,14 @@ export default function PaymentsList() {
     isFetching
   } = useQuery({
     queryKey: ['payments'],
-    queryFn: () => base44.entities.Payment.list('-created_date', 300),
+    queryFn: () => ethioCareClient.entities.Payment.list('-created_date', 300),
     refetchInterval: 10000
   });
 
   // 2. Fetch Patients to resolve human-readable patient IDs (e.g. PT-260915-1001)
   const { data: patients = [] } = useQuery({
     queryKey: ['patients'],
-    queryFn: () => base44.entities.Patient.list('-created_date', 300)
+    queryFn: () => ethioCareClient.entities.Patient.list('-created_date', 300)
   });
 
   // Patient mapping dictionary
@@ -118,7 +118,7 @@ export default function PaymentsList() {
 
   // Realtime subscription
   useEffect(() => {
-    const unsubscribe = base44.entities.Payment.subscribe(() => {
+    const unsubscribe = ethioCareClient.entities.Payment.subscribe(() => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['medicationOrders'] });
     });
@@ -299,7 +299,7 @@ export default function PaymentsList() {
       const paidDate = format(new Date(), 'yyyy-MM-dd');
       const cashier = user?.full_name || 'Hospital Cashier';
 
-      const payment = await base44.entities.Payment.create({
+      const payment = await ethioCareClient.entities.Payment.create({
         patient_id: newPay.patient_id || null,
         patient_name: newPay.patient_name.trim(),
         payment_type: newPay.payment_type,

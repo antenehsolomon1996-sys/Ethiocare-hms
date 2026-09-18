@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ export default function RecordVitals() {
 
   const { data: visits = [] } = useQuery({ 
     queryKey: ['visits'], 
-    queryFn: () => base44.entities.Visit.list('-created_date', 50) 
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 50) 
   });
 
   const activeVisits = visits.filter(v => v.status !== 'completed' && v.status !== 'cancelled');
@@ -36,7 +36,7 @@ export default function RecordVitals() {
 
     setIsSaving(true);
     try {
-      await base44.entities.Vital.create({
+      await ethioCareClient.entities.Vital.create({
         visit_id: selectedVisit,
         patient_id: visit.patient_id,
         patient_name: visit.patient_name,

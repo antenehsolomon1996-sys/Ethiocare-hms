@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ export default function PrescriptionsList() {
 
   const { data: prescriptions = [], isLoading } = useQuery({ 
     queryKey: ['prescriptions'], 
-    queryFn: () => base44.entities.Prescription.list('-created_date', 200),
+    queryFn: () => ethioCareClient.entities.Prescription.list('-created_date', 200),
     refetchInterval: 10000
   });
 
@@ -33,17 +33,17 @@ export default function PrescriptionsList() {
     if (!selected) return;
     setIsDispensing(true);
     try {
-      await base44.entities.Prescription.update(selected.id, { 
+      await ethioCareClient.entities.Prescription.update(selected.id, { 
         status: 'dispensed',
         dispensed_date: format(new Date(), 'yyyy-MM-dd')
       });
       // Try to reduce stock
       try {
-        const medicines = await base44.entities.Medicine.list();
+        const medicines = await ethioCareClient.entities.Medicine.list();
         const medicine = medicines.find(m => m.name?.toLowerCase() === selected.medicine_name?.toLowerCase());
         if (medicine) {
           const newQty = Math.max(0, (medicine.quantity || 0) - (selected.quantity || 1));
-          await base44.entities.Medicine.update(medicine.id, { 
+          await ethioCareClient.entities.Medicine.update(medicine.id, { 
             quantity: newQty,
             status: newQty <= 0 ? 'out_of_stock' : newQty <= (medicine.min_stock || 10) ? 'low_stock' : 'in_stock'
           });

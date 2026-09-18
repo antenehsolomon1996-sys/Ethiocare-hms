@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Link } from 'react-router-dom';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -26,12 +26,12 @@ export default function QueueView() {
 
   const { data: visits = [], isLoading } = useQuery({ 
     queryKey: ['visits'], 
-    queryFn: () => base44.entities.Visit.list('-created_date', 200),
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 200),
     refetchInterval: 15000
   });
   const { data: nurseTasks = [] } = useQuery({
     queryKey: ['nurseTasks'],
-    queryFn: () => base44.entities.NurseTask.list('-created_date', 200),
+    queryFn: () => ethioCareClient.entities.NurseTask.list('-created_date', 200),
     refetchInterval: 15000
   });
 
@@ -40,7 +40,7 @@ export default function QueueView() {
     .sort((a, b) => (a.queue_number || 0) - (b.queue_number || 0));
 
   const statusMutation = useMutation({
-    mutationFn: ({ visit, newStatus }) => base44.entities.Visit.update(visit.id, { status: newStatus }),
+    mutationFn: ({ visit, newStatus }) => ethioCareClient.entities.Visit.update(visit.id, { status: newStatus }),
     onMutate: async ({ visit, newStatus }) => {
       await queryClient.cancelQueries({ queryKey: ['visits'] });
       const previousVisits = queryClient.getQueryData(['visits']);

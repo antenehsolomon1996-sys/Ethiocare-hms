@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +35,7 @@ export default function LabTestFeesTab() {
 
   const { data: tests = [], isLoading } = useQuery({
     queryKey: ['labTests'],
-    queryFn: () => base44.entities.LabTest.list()
+    queryFn: () => ethioCareClient.entities.LabTest.list()
   });
 
   const filtered = tests.filter(t => {
@@ -98,7 +98,7 @@ export default function LabTestFeesTab() {
     setSaving(true);
     try {
       if (editing) {
-        await base44.entities.LabTest.update(editing.id, payload);
+        await ethioCareClient.entities.LabTest.update(editing.id, payload);
         toast.success(`Lab test "${form.name}" updated successfully`);
         logAudit({
           userName: user?.full_name || 'Hospital Owner',
@@ -110,7 +110,7 @@ export default function LabTestFeesTab() {
           recordName: payload.name
         });
       } else {
-        const created = await base44.entities.LabTest.create(payload);
+        const created = await ethioCareClient.entities.LabTest.create(payload);
         toast.success(`Lab test "${form.name}" created successfully`);
         logAudit({
           userName: user?.full_name || 'Hospital Owner',
@@ -135,7 +135,7 @@ export default function LabTestFeesTab() {
   const handleDelete = async (t) => {
     if (!confirm(`Are you sure you want to delete "${t.name}"?`)) return;
     try {
-      await base44.entities.LabTest.delete(t.id);
+      await ethioCareClient.entities.LabTest.delete(t.id);
       queryClient.invalidateQueries({ queryKey: ['labTests'] });
       toast.success(`Lab test "${t.name}" deleted`);
       logAudit({
@@ -155,7 +155,7 @@ export default function LabTestFeesTab() {
   const toggleStatus = async (t) => {
     const newStatus = t.status === 'active' ? 'inactive' : 'active';
     try {
-      await base44.entities.LabTest.update(t.id, { status: newStatus });
+      await ethioCareClient.entities.LabTest.update(t.id, { status: newStatus });
       queryClient.invalidateQueries({ queryKey: ['labTests'] });
       toast.success(`${t.name} is now ${newStatus === 'active' ? 'Active' : 'Disabled'}`);
       logAudit({

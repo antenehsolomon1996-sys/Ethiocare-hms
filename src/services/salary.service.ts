@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { notificationService } from '@/services/notification.service';
 import { logAudit } from '@/lib/auditLogger';
 import {
@@ -68,8 +68,8 @@ export const salaryService = {
    */
   async listEmployeeSalaries(): Promise<EmployeeSalaryConfig[]> {
     const [staffMembers, salaryConfigs] = await Promise.all([
-      base44.entities.Staff.list().catch(() => []),
-      base44.entities.EmployeeSalary.list().catch(() => []),
+      ethioCareClient.entities.Staff.list().catch(() => []),
+      ethioCareClient.entities.EmployeeSalary.list().catch(() => []),
     ]);
 
     const configMap = new Map<string, any>();
@@ -148,14 +148,14 @@ export const salaryService = {
 
     let result;
     if (config.id) {
-      result = await base44.entities.EmployeeSalary.update(config.id, payload);
+      result = await ethioCareClient.entities.EmployeeSalary.update(config.id, payload);
     } else {
       // Check if an existing config exists for this staff_id
-      const existing = await base44.entities.EmployeeSalary.filter({ staff_id: config.staff_id }).catch(() => []);
+      const existing = await ethioCareClient.entities.EmployeeSalary.filter({ staff_id: config.staff_id }).catch(() => []);
       if (existing.length > 0) {
-        result = await base44.entities.EmployeeSalary.update(existing[0].id, payload);
+        result = await ethioCareClient.entities.EmployeeSalary.update(existing[0].id, payload);
       } else {
-        result = await base44.entities.EmployeeSalary.create(payload);
+        result = await ethioCareClient.entities.EmployeeSalary.create(payload);
       }
     }
 
@@ -185,7 +185,7 @@ export const salaryService = {
     const payDate = data.payment_date || format(new Date(), 'yyyy-MM-dd');
 
     // 1. Create SalaryPayment record
-    const paymentRecord = await base44.entities.SalaryPayment.create({
+    const paymentRecord = await ethioCareClient.entities.SalaryPayment.create({
       employee_salary_id: data.employee_salary_id || null,
       staff_id: data.staff_id,
       employee_name: data.employee_name,
@@ -206,7 +206,7 @@ export const salaryService = {
 
     // 2. Auto-log corresponding entry in public.expenses
     try {
-      await base44.entities.Expense.create({
+      await ethioCareClient.entities.Expense.create({
         category: 'salaries',
         title: `Salary: ${data.employee_name} (${data.salary_period})`,
         amount: amountPaid,
@@ -249,7 +249,7 @@ export const salaryService = {
    * List salary payments with optional period filter (e.g. '2026-09')
    */
   async listSalaryPayments(period?: string): Promise<any[]> {
-    const list = await base44.entities.SalaryPayment.list('-payment_date', 500).catch(() => []);
+    const list = await ethioCareClient.entities.SalaryPayment.list('-payment_date', 500).catch(() => []);
     if (!period) return list;
     return list.filter((p: any) => p.salary_period === period);
   },
@@ -265,7 +265,7 @@ export const salaryService = {
   async getSalaryDueNotifications(currentDate: Date = new Date()): Promise<SalaryDueAlert[]> {
     const [configs, payments] = await Promise.all([
       this.listEmployeeSalaries(),
-      base44.entities.SalaryPayment.list('-payment_date', 500).catch(() => []),
+      ethioCareClient.entities.SalaryPayment.list('-payment_date', 500).catch(() => []),
     ]);
 
     const currentPeriod = format(currentDate, 'yyyy-MM');

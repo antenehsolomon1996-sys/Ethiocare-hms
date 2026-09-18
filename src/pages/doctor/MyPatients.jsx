@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useDoctorContext } from '@/lib/DoctorContext';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ export default function MyPatients() {
 
   const { data: visits = [], isLoading } = useQuery({
     queryKey: ['visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 500),
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 500),
     refetchInterval: 20000
   });
 

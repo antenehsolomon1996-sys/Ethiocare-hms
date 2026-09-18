@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,27 +28,27 @@ export default function PatientSearch() {
 
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ['patients'],
-    queryFn: () => base44.entities.Patient.list('-created_date', 500)
+    queryFn: () => ethioCareClient.entities.Patient.list('-created_date', 500)
   });
 
   const { data: staff = [] } = useQuery({
     queryKey: ['staff'],
-    queryFn: () => base44.entities.Staff.list()
+    queryFn: () => ethioCareClient.entities.Staff.list()
   });
 
   const { data: doctors = [] } = useQuery({
     queryKey: ['doctors'],
-    queryFn: () => base44.entities.Doctor.list()
+    queryFn: () => ethioCareClient.entities.Doctor.list()
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
+    queryFn: () => ethioCareClient.entities.Service.list()
   });
 
   const { data: visits = [] } = useQuery({
     queryKey: ['visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 500)
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 500)
   });
 
   const feeAssessment = selected
@@ -103,7 +103,7 @@ export default function PatientSearch() {
         emergency_contact_name: editForm.emergency_contact_name?.trim() || null,
         emergency_contact_phone: editForm.emergency_contact_phone?.trim() || null,
       };
-      await base44.entities.Patient.update(selected.id, sanitized);
+      await ethioCareClient.entities.Patient.update(selected.id, sanitized);
       queryClient.invalidateQueries({ queryKey: ['patients'] });
       setSelected(prev => ({ ...prev, ...sanitized }));
       setEditOpen(false);
@@ -120,13 +120,13 @@ export default function PatientSearch() {
     if (!selected) return;
     setIsSendingQueue(true);
     try {
-      const visits = await base44.entities.Visit.list('-created_date', 200);
+      const visits = await ethioCareClient.entities.Visit.list('-created_date', 200);
       const today = format(new Date(), 'yyyy-MM-dd');
       const todayVisits = visits.filter(v => v.visit_date === today);
       const queueNum = todayVisits.length + 1;
 
       // Returning patients must pay the new visit registration/revisit fee
-      const newVisit = await base44.entities.Visit.create({
+      const newVisit = await ethioCareClient.entities.Visit.create({
         patient_id: selected.id,
         patient_name: selected.full_name,
         visit_date: today,
@@ -140,7 +140,7 @@ export default function PatientSearch() {
       });
 
       // Create pending registration payment for this current visit
-      await base44.entities.Payment.create({
+      await ethioCareClient.entities.Payment.create({
         visit_id: newVisit.id,
         patient_id: selected.id,
         patient_name: selected.full_name,

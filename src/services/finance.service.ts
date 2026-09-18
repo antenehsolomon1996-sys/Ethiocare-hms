@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { pharmacySaleService } from '@/services/pharmacySale.service';
 import { logAudit } from '@/lib/auditLogger';
 import {
@@ -99,10 +99,10 @@ export const financeService = {
   async getFinancialSummary(): Promise<FinancialSummary> {
     // 1. Fetch data concurrently
     const [payments, walkInSales, otherIncomes, expenses] = await Promise.all([
-      base44.entities.Payment.list('-created_date', 1000).catch(() => []),
+      ethioCareClient.entities.Payment.list('-created_date', 1000).catch(() => []),
       pharmacySaleService.getSales().catch(() => []),
-      base44.entities.OtherIncome.list('-income_date', 500).catch(() => []),
-      base44.entities.Expense.list('-expense_date', 500).catch(() => []),
+      ethioCareClient.entities.OtherIncome.list('-income_date', 500).catch(() => []),
+      ethioCareClient.entities.Expense.list('-expense_date', 500).catch(() => []),
     ]);
 
     // 2. Identify all PAID hospital payments
@@ -300,7 +300,7 @@ export const financeService = {
     if (!data.title || !data.amount) {
       throw new Error('Expense title and amount are required');
     }
-    const created = await base44.entities.Expense.create({
+    const created = await ethioCareClient.entities.Expense.create({
       ...data,
       amount: Number(data.amount),
       recorded_by: recordedBy,
@@ -318,7 +318,7 @@ export const financeService = {
   },
 
   async updateExpense(id: string, data: Partial<ExpenseRecord>, updatedBy: string = 'Owner/Admin'): Promise<any> {
-    const updated = await base44.entities.Expense.update(id, {
+    const updated = await ethioCareClient.entities.Expense.update(id, {
       ...data,
       amount: data.amount !== undefined ? Number(data.amount) : undefined,
       updated_at: new Date().toISOString(),
@@ -335,7 +335,7 @@ export const financeService = {
   },
 
   async deleteExpense(id: string, deletedBy: string = 'Owner/Admin'): Promise<boolean> {
-    await base44.entities.Expense.delete(id);
+    await ethioCareClient.entities.Expense.delete(id);
 
     logAudit({
       action: 'DELETE_EXPENSE',
@@ -354,7 +354,7 @@ export const financeService = {
     if (!data.title || !data.amount) {
       throw new Error('Income title and amount are required');
     }
-    const created = await base44.entities.OtherIncome.create({
+    const created = await ethioCareClient.entities.OtherIncome.create({
       ...data,
       amount: Number(data.amount),
       recorded_by: recordedBy,
@@ -372,7 +372,7 @@ export const financeService = {
   },
 
   async updateOtherIncome(id: string, data: Partial<OtherIncomeRecord>, updatedBy: string = 'Owner/Admin'): Promise<any> {
-    const updated = await base44.entities.OtherIncome.update(id, {
+    const updated = await ethioCareClient.entities.OtherIncome.update(id, {
       ...data,
       amount: data.amount !== undefined ? Number(data.amount) : undefined,
       updated_at: new Date().toISOString(),
@@ -389,7 +389,7 @@ export const financeService = {
   },
 
   async deleteOtherIncome(id: string, deletedBy: string = 'Owner/Admin'): Promise<boolean> {
-    await base44.entities.OtherIncome.delete(id);
+    await ethioCareClient.entities.OtherIncome.delete(id);
 
     logAudit({
       action: 'DELETE_OTHER_INCOME',

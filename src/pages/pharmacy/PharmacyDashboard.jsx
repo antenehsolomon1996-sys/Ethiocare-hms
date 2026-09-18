@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { pharmacySaleService } from '@/services/pharmacySale.service';
 import PharmacyReceiptModal from '@/components/pharmacy/PharmacyReceiptModal';
 import StatCard from '@/components/common/StatCard';
@@ -37,14 +37,14 @@ export default function PharmacyDashboard() {
   // 1. Hospital Prescriptions Query
   const { data: prescriptions = [] } = useQuery({
     queryKey: ['prescriptions'],
-    queryFn: () => base44.entities.Prescription.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.Prescription.list('-created_date', 100),
     refetchInterval: 10000
   });
 
   // 2. Medicine Inventory Query
   const { data: medicines = [] } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list('-created_date', 300)
+    queryFn: () => ethioCareClient.entities.Medicine.list('-created_date', 300)
   });
 
   // 3. Load Walk-In Sales

@@ -8,7 +8,7 @@ import {
   PackagePlus, RotateCcw, History, Sparkles, Bell, User, DollarSign, Wallet
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DoctorSelector from '@/components/doctor/DoctorSelector';
 import { useHospitalBranding } from '@/hooks/useHospitalBranding';
 import { usePharmacyBranding } from '@/hooks/usePharmacyBranding';
@@ -167,7 +167,7 @@ export default function Sidebar({ role }) {
   const orgLogo = isPharmacy ? pharmacy?.pharmacy_logo : hospital?.hospital_logo;
 
   const handleLogout = () => {
-    base44.auth.logout('/login');
+    ethioCareClient.auth.logout('/login');
   };
 
   return (

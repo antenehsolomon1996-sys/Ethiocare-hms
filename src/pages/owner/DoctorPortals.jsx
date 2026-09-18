@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,11 +24,11 @@ export default function DoctorPortals() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
 
-  const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: () => base44.entities.Doctor.list() });
-  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => base44.entities.Visit.list('-created_date', 200) });
-  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => base44.entities.LabOrder.list('-created_date', 200) });
-  const { data: prescriptions = [] } = useQuery({ queryKey: ['prescriptions'], queryFn: () => base44.entities.Prescription.list('-created_date', 200) });
-  const { data: patientHistory = [] } = useQuery({ queryKey: ['patientHistory'], queryFn: () => base44.entities.PatientHistory.list('-created_date', 200) });
+  const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: () => ethioCareClient.entities.Doctor.list() });
+  const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 200) });
+  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 200) });
+  const { data: prescriptions = [] } = useQuery({ queryKey: ['prescriptions'], queryFn: () => ethioCareClient.entities.Prescription.list('-created_date', 200) });
+  const { data: patientHistory = [] } = useQuery({ queryKey: ['patientHistory'], queryFn: () => ethioCareClient.entities.PatientHistory.list('-created_date', 200) });
 
   const uniqueDoctors = useMemo(() => {
     const seenIds = new Set();

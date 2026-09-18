@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Users, Clock, UserPlus, CheckCircle, Search, Calendar } from 'lucide-react';
@@ -10,12 +10,12 @@ import { Button } from '@/components/ui/button';
 export default function ReceptionDashboard() {
   const { data: visits = [], isLoading } = useQuery({
     queryKey: ['visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 100),
     refetchInterval: 15000
   });
   const { data: patients = [] } = useQuery({
     queryKey: ['patients'],
-    queryFn: () => base44.entities.Patient.list()
+    queryFn: () => ethioCareClient.entities.Patient.list()
   });
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');

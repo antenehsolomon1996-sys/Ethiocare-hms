@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 
 /**
  * Log an audit action to the AuditLog entity.
@@ -13,7 +13,7 @@ import { base44 } from '@/api/base44Client';
  */
 export async function logAudit({ userName, userRole, action, module, description, recordId, recordName }) {
   try {
-    await base44.entities.AuditLog.create({
+    await ethioCareClient.entities.AuditLog.create({
       user_name: userName || 'Unknown',
       user_role: userRole || 'unknown',
       action,

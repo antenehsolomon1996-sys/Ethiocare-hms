@@ -31,7 +31,7 @@ import {
   User,
   DollarSign,
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 
 // Dedicated top 4 destinations per portal (5th is always 'More' drawer)
 const PORTAL_BOTTOM_NAV = {
@@ -124,7 +124,7 @@ export default function BottomTabBar({ role }) {
 
   const handleLogout = () => {
     setMoreOpen(false);
-    base44.auth.logout('/login');
+    ethioCareClient.auth.logout('/login');
   };
 
   return (

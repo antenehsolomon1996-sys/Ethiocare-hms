@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,7 +49,7 @@ export default function MedicineFeesTab() {
 
   const { data: medicines = [], isLoading } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list()
+    queryFn: () => ethioCareClient.entities.Medicine.list()
   });
 
   const filtered = medicines.filter(m => {
@@ -134,7 +134,7 @@ export default function MedicineFeesTab() {
     setSaving(true);
     try {
       if (editing) {
-        await base44.entities.Medicine.update(editing.id, payload);
+        await ethioCareClient.entities.Medicine.update(editing.id, payload);
         toast.success(`Medicine "${form.name}" updated successfully`);
         logAudit({
           userName: user?.full_name || 'Hospital Owner',
@@ -146,7 +146,7 @@ export default function MedicineFeesTab() {
           recordName: payload.name
         });
       } else {
-        const created = await base44.entities.Medicine.create(payload);
+        const created = await ethioCareClient.entities.Medicine.create(payload);
         toast.success(`Medicine "${form.name}" added to catalog`);
         logAudit({
           userName: user?.full_name || 'Hospital Owner',
@@ -171,7 +171,7 @@ export default function MedicineFeesTab() {
   const handleDelete = async (m) => {
     if (!confirm(`Are you sure you want to remove "${m.name}" from catalog?`)) return;
     try {
-      await base44.entities.Medicine.delete(m.id);
+      await ethioCareClient.entities.Medicine.delete(m.id);
       queryClient.invalidateQueries({ queryKey: ['medicines'] });
       toast.success(`Medicine "${m.name}" removed`);
       logAudit({

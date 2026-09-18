@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatusBadge from '@/components/common/StatusBadge';
 import StatCard from '@/components/common/StatCard';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,7 @@ export default function MedicinesManagement() {
 
   const { data: medicines = [], isLoading } = useQuery({
     queryKey: ['medicines'],
-    queryFn: () => base44.entities.Medicine.list('-created_date', 200)
+    queryFn: () => ethioCareClient.entities.Medicine.list('-created_date', 200)
   });
 
   // Compute status for each medicine
@@ -121,10 +121,10 @@ export default function MedicinesManagement() {
       const status = computeStatus(payload);
       payload.status = status;
       if (editId) {
-        await base44.entities.Medicine.update(editId, payload);
+        await ethioCareClient.entities.Medicine.update(editId, payload);
         toast.success('Medicine updated');
       } else {
-        await base44.entities.Medicine.create(payload);
+        await ethioCareClient.entities.Medicine.create(payload);
         toast.success('Medicine added to inventory');
       }
       queryClient.invalidateQueries({ queryKey: ['medicines'] });
@@ -140,7 +140,7 @@ export default function MedicinesManagement() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await base44.entities.Medicine.delete(deleteTarget.id);
+      await ethioCareClient.entities.Medicine.delete(deleteTarget.id);
       queryClient.invalidateQueries({ queryKey: ['medicines'] });
       toast.success('Medicine deleted');
       setDeleteTarget(null);
@@ -151,7 +151,7 @@ export default function MedicinesManagement() {
 
   const handleArchive = async (med) => {
     try {
-      await base44.entities.Medicine.update(med.id, { archived: !med.archived });
+      await ethioCareClient.entities.Medicine.update(med.id, { archived: !med.archived });
       queryClient.invalidateQueries({ queryKey: ['medicines'] });
       toast.success(med.archived ? 'Medicine restored' : 'Medicine archived');
     } catch (err) {
@@ -164,7 +164,7 @@ export default function MedicinesManagement() {
     if (isNaN(qty)) return;
     try {
       const status = computeStatus({ ...med, quantity: qty });
-      await base44.entities.Medicine.update(med.id, { quantity: qty, status });
+      await ethioCareClient.entities.Medicine.update(med.id, { quantity: qty, status });
       queryClient.invalidateQueries({ queryKey: ['medicines'] });
       toast.success(`Stock updated: ${med.name} → ${qty} ${med.unit || 'pieces'}`);
     } catch (err) {

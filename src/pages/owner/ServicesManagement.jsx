@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ export default function ServicesManagement() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', category: 'consultation', price: '', description: '' });
   const queryClient = useQueryClient();
-  const { data: services = [], isLoading } = useQuery({ queryKey: ['services'], queryFn: () => base44.entities.Service.list() });
+  const { data: services = [], isLoading } = useQuery({ queryKey: ['services'], queryFn: () => ethioCareClient.entities.Service.list() });
 
   const handleSave = async () => {
     if (!form.name?.trim()) {
@@ -29,7 +29,7 @@ export default function ServicesManagement() {
     }
     setSaving(true);
     try {
-      await base44.entities.Service.create({ ...form, price: priceNum });
+      await ethioCareClient.entities.Service.create({ ...form, price: priceNum });
       queryClient.invalidateQueries({ queryKey: ['services'] });
       toast.success('Service created');
       setOpen(false);
@@ -43,7 +43,7 @@ export default function ServicesManagement() {
 
   const handleDelete = async (id) => {
     try {
-      await base44.entities.Service.delete(id);
+      await ethioCareClient.entities.Service.delete(id);
       queryClient.invalidateQueries({ queryKey: ['services'] });
       toast.success('Service deleted');
     } catch (err) {

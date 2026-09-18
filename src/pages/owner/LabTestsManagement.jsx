@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ export default function LabTestsManagement() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: '', category: 'Blood', price: '', description: '', turnaround_time: '' });
   const queryClient = useQueryClient();
-  const { data: tests = [], isLoading } = useQuery({ queryKey: ['labTests'], queryFn: () => base44.entities.LabTest.list() });
+  const { data: tests = [], isLoading } = useQuery({ queryKey: ['labTests'], queryFn: () => ethioCareClient.entities.LabTest.list() });
 
   const handleSave = async () => {
     if (!form.name?.trim()) {
@@ -29,7 +29,7 @@ export default function LabTestsManagement() {
     }
     setSaving(true);
     try {
-      await base44.entities.LabTest.create({ ...form, price: priceNum });
+      await ethioCareClient.entities.LabTest.create({ ...form, price: priceNum });
       queryClient.invalidateQueries({ queryKey: ['labTests'] });
       toast.success('Lab test added');
       setOpen(false);
@@ -43,7 +43,7 @@ export default function LabTestsManagement() {
 
   const handleDelete = async (id) => {
     try {
-      await base44.entities.LabTest.delete(id);
+      await ethioCareClient.entities.LabTest.delete(id);
       queryClient.invalidateQueries({ queryKey: ['labTests'] });
       toast.success('Deleted');
     } catch (err) {

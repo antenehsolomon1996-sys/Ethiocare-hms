@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { useDoctorContext } from '@/lib/DoctorContext';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -33,15 +33,15 @@ export default function DoctorQueue() {
 
   const { data: visits = [] } = useQuery({
     queryKey: ['visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 200),
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 200),
     refetchInterval: 10000,
     staleTime: 30000
   });
-  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => base44.entities.LabOrder.list('-created_date', 200) });
-  const { data: prescriptions = [] } = useQuery({ queryKey: ['prescriptions'], queryFn: () => base44.entities.Prescription.list('-created_date', 200) });
-  const { data: medicationOrders = [] } = useQuery({ queryKey: ['medicationOrders'], queryFn: () => base44.entities.MedicationOrder.list('-created_date', 200) });
-  const { data: availableLabTests = [] } = useQuery({ queryKey: ['labTests'], queryFn: () => base44.entities.LabTest.list() });
-  const { data: availableMedicines = [] } = useQuery({ queryKey: ['medicines'], queryFn: () => base44.entities.Medicine.list() });
+  const { data: labOrders = [] } = useQuery({ queryKey: ['labOrders'], queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 200) });
+  const { data: prescriptions = [] } = useQuery({ queryKey: ['prescriptions'], queryFn: () => ethioCareClient.entities.Prescription.list('-created_date', 200) });
+  const { data: medicationOrders = [] } = useQuery({ queryKey: ['medicationOrders'], queryFn: () => ethioCareClient.entities.MedicationOrder.list('-created_date', 200) });
+  const { data: availableLabTests = [] } = useQuery({ queryKey: ['labTests'], queryFn: () => ethioCareClient.entities.LabTest.list() });
+  const { data: availableMedicines = [] } = useQuery({ queryKey: ['medicines'], queryFn: () => ethioCareClient.entities.Medicine.list() });
 
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -99,7 +99,7 @@ export default function DoctorQueue() {
     });
     if (visit.status === 'waiting') {
       try {
-        base44.entities.Visit.update(visit.id, {
+        ethioCareClient.entities.Visit.update(visit.id, {
           status: 'with_doctor',
           assigned_doctor: selectedDoctor?.full_name || visit.assigned_doctor || null,
           assigned_doctor_id: myDoctorId || visit.assigned_doctor_id || null
@@ -118,7 +118,7 @@ export default function DoctorQueue() {
     if (!selected) return;
     setActionLoading(true);
     try {
-      await base44.entities.Visit.update(selected.id, examForm);
+      await ethioCareClient.entities.Visit.update(selected.id, examForm);
       queryClient.invalidateQueries({ queryKey: ['visits'] });
       toast.success('Examination saved');
       logAudit({ userName: selectedDoctor?.full_name, userRole: 'doctor', action: 'update', module: 'Visit', description: `Saved examination for ${selected.patient_name}`, recordId: selected.id, recordName: selected.patient_name });
@@ -146,7 +146,7 @@ export default function DoctorQueue() {
       const testName = selectedTest?.name || labForm.test_name || labForm.test_type;
       const testCategory = selectedTest?.category || labForm.test_type || 'Laboratory';
 
-      const labOrder = await base44.entities.LabOrder.create({
+      const labOrder = await ethioCareClient.entities.LabOrder.create({
         visit_id: selected.id,
         patient_id: selected.patient_id,
         patient_name: selected.patient_name,
@@ -159,7 +159,7 @@ export default function DoctorQueue() {
         test_status: 'awaiting_payment',
         price: price
       });
-      await base44.entities.Payment.create({
+      await ethioCareClient.entities.Payment.create({
         visit_id: selected.id,
         patient_id: selected.patient_id,
         patient_name: selected.patient_name,
@@ -170,7 +170,7 @@ export default function DoctorQueue() {
         reference_type: 'lab_order',
         reference_id: labOrder.id
       });
-      await base44.entities.Visit.update(selected.id, { status: 'lab_pending' });
+      await ethioCareClient.entities.Visit.update(selected.id, { status: 'lab_pending' });
       queryClient.invalidateQueries({ queryKey: ['labOrders', 'visits', 'payments'] });
       toast.success(`Lab order "${testName}" created (${price} ETB) — sent to billing`);
       logAudit({ userName: selectedDoctor?.full_name, userRole: 'doctor', action: 'create', module: 'LabOrder', description: `Ordered ${testName} (${price} ETB) for ${selected.patient_name}`, recordId: labOrder.id, recordName: selected.patient_name });
@@ -206,7 +206,7 @@ export default function DoctorQueue() {
       const unitPrice = matchedMed?.unit_price ?? 0;
       const totalAmount = unitPrice * qty;
 
-      const rx = await base44.entities.Prescription.create({
+      const rx = await ethioCareClient.entities.Prescription.create({
         visit_id: selected.id,
         patient_id: selected.patient_id,
         patient_name: selected.patient_name,
@@ -221,7 +221,7 @@ export default function DoctorQueue() {
         status: 'pending',
         payment_status: 'pending'
       });
-      await base44.entities.Payment.create({
+      await ethioCareClient.entities.Payment.create({
         visit_id: selected.id,
         patient_id: selected.patient_id,
         patient_name: selected.patient_name,
@@ -271,7 +271,7 @@ export default function DoctorQueue() {
         status: 'pharmacy',
         consultation_completed: true
       };
-      await base44.entities.Visit.update(selected.id, sanitizedFinal);
+      await ethioCareClient.entities.Visit.update(selected.id, sanitizedFinal);
 
       // Save to centralized patient history
       const visitPrescriptions = prescriptions.filter(p => p.visit_id === selected.id);
@@ -279,7 +279,7 @@ export default function DoctorQueue() {
       const prescriptionSummary = visitPrescriptions.map(p => `${p.medicine_name} (${p.dosage})`).join(', ');
       const labResultsSummary = visitLabs.filter(l => l.results).map(l => `${l.test_type}: ${l.results}`).join('; ');
 
-      await base44.entities.PatientHistory.create({
+      await ethioCareClient.entities.PatientHistory.create({
         patient_id: selected.patient_id,
         patient_name: selected.patient_name,
         visit_id: selected.id,

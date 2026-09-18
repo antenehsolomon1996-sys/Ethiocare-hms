@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -21,29 +21,29 @@ export default function NurseUnifiedTasks() {
 
   const { data: medOrders = [] } = useQuery({
     queryKey: ['medicationOrders'],
-    queryFn: () => base44.entities.MedicationOrder.list('-created_date', 200),
+    queryFn: () => ethioCareClient.entities.MedicationOrder.list('-created_date', 200),
     refetchInterval: 10000
   });
   const { data: tasks = [] } = useQuery({
     queryKey: ['nurseTasks'],
-    queryFn: () => base44.entities.NurseTask.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.NurseTask.list('-created_date', 100),
     refetchInterval: 10000
   });
   const { data: visits = [] } = useQuery({
     queryKey: ['visits'],
-    queryFn: () => base44.entities.Visit.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 100),
     refetchInterval: 15000
   });
   const { data: vitals = [] } = useQuery({
     queryKey: ['vitals'],
-    queryFn: () => base44.entities.Vital.list('-created_date', 100)
+    queryFn: () => ethioCareClient.entities.Vital.list('-created_date', 100)
   });
 
   // Realtime subscriptions for immediate cross-portal sync
   useEffect(() => {
-    const unsubMed = base44.entities.MedicationOrder.subscribe(() => queryClient.invalidateQueries({ queryKey: ['medicationOrders'] }));
-    const unsubTask = base44.entities.NurseTask.subscribe(() => queryClient.invalidateQueries({ queryKey: ['nurseTasks'] }));
-    const unsubVisit = base44.entities.Visit.subscribe(() => queryClient.invalidateQueries({ queryKey: ['visits'] }));
+    const unsubMed = ethioCareClient.entities.MedicationOrder.subscribe(() => queryClient.invalidateQueries({ queryKey: ['medicationOrders'] }));
+    const unsubTask = ethioCareClient.entities.NurseTask.subscribe(() => queryClient.invalidateQueries({ queryKey: ['nurseTasks'] }));
+    const unsubVisit = ethioCareClient.entities.Visit.subscribe(() => queryClient.invalidateQueries({ queryKey: ['visits'] }));
     return () => { unsubMed(); unsubTask(); unsubVisit(); };
   }, [queryClient]);
 

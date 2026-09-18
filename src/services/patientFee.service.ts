@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { differenceInDays, parseISO, isValid } from 'date-fns';
 import { logAudit } from '@/lib/auditLogger';
 
@@ -190,17 +190,17 @@ export const patientFeeService = {
     recentPatientFee: number,
     updatedBy: string = 'Owner/Admin'
   ): Promise<boolean> {
-    const services = await base44.entities.Service.list();
+    const services = await ethioCareClient.entities.Service.list();
     const tariffs = this.getRegistrationTariffs(services);
 
     // 1. Update or create New Patient Registration Fee
     if (tariffs.newPatientService) {
-      await base44.entities.Service.update(tariffs.newPatientService.id, {
+      await ethioCareClient.entities.Service.update(tariffs.newPatientService.id, {
         price: newPatientFee,
         updated_at: new Date().toISOString(),
       });
     } else {
-      await base44.entities.Service.create({
+      await ethioCareClient.entities.Service.create({
         name: 'Patient Registration (New Patient)',
         category: 'registration',
         price: newPatientFee,
@@ -211,12 +211,12 @@ export const patientFeeService = {
 
     // 2. Update or create Recent Patient Revisit Fee
     if (tariffs.recentPatientService) {
-      await base44.entities.Service.update(tariffs.recentPatientService.id, {
+      await ethioCareClient.entities.Service.update(tariffs.recentPatientService.id, {
         price: recentPatientFee,
         updated_at: new Date().toISOString(),
       });
     } else {
-      await base44.entities.Service.create({
+      await ethioCareClient.entities.Service.create({
         name: 'Recent Patient Revisit Fee (≤30 Days)',
         category: 'registration',
         price: recentPatientFee,

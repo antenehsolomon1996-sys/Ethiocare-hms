@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 
 const DoctorContext = createContext(null);
 
@@ -37,7 +37,7 @@ export function DoctorProvider({ children }) {
         const parsed = JSON.parse(stored);
         localStorage.setItem('hms_selected_doctor', JSON.stringify({ ...parsed, availability: newStatus }));
       }
-      await base44.entities.Doctor.update(selectedDoctor.id, { availability: newStatus });
+      await ethioCareClient.entities.Doctor.update(selectedDoctor.id, { availability: newStatus });
     } catch (err) {
       console.warn('[DoctorContext] Failed to update availability:', err);
     }
@@ -49,7 +49,7 @@ export function DoctorProvider({ children }) {
     async function loadDoctors() {
       try {
         setIsLoadingDoctors(true);
-        const docs = await base44.entities.Doctor.list();
+        const docs = await ethioCareClient.entities.Doctor.list();
         if (!isMounted) return;
 
         // Deduplicate

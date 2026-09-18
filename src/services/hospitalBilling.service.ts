@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import { supabase } from '@/lib/supabase';
 import { notificationService } from '@/services/notification.service';
 import { logAudit } from '@/lib/auditLogger';
@@ -30,7 +30,7 @@ export const hospitalBillingService = {
     if (!paymentId) throw new Error('Payment ID is required');
 
     // 1. Fetch current payment record
-    const payment = await base44.entities.Payment.get(paymentId);
+    const payment = await ethioCareClient.entities.Payment.get(paymentId);
     if (!payment) throw new Error(`Payment record not found: ${paymentId}`);
 
     const receiptNum = options.receiptNumber ||
@@ -55,7 +55,7 @@ export const hospitalBillingService = {
     }
 
     // 2. Update payment record to PAID
-    const updatedPayment = await base44.entities.Payment.update(payment.id, {
+    const updatedPayment = await ethioCareClient.entities.Payment.update(payment.id, {
       status: 'paid',
       amount: finalAmount,
       payment_method: paymentMethod,
@@ -83,7 +83,7 @@ export const hospitalBillingService = {
       // If visit_id is missing, look up active/today's visit for this patient
       if (!targetVisitId && payment.patient_id) {
         const today = format(new Date(), 'yyyy-MM-dd');
-        const visits = await base44.entities.Visit.filter({ patient_id: payment.patient_id, visit_date: today });
+        const visits = await ethioCareClient.entities.Visit.filter({ patient_id: payment.patient_id, visit_date: today });
         if (visits.length > 0) {
           targetVisitId = visits[0].id;
         }
@@ -91,7 +91,7 @@ export const hospitalBillingService = {
 
       if (targetVisitId) {
         try {
-          await base44.entities.Visit.update(targetVisitId, {
+          await ethioCareClient.entities.Visit.update(targetVisitId, {
             registration_fee_paid: true,
             billing_completed: true,
             status: 'waiting'
@@ -117,16 +117,16 @@ export const hospitalBillingService = {
     else if (refType === 'lab_order' || payment.payment_type === 'laboratory') {
       try {
         if (refId) {
-          await base44.entities.LabOrder.update(refId, {
+          await ethioCareClient.entities.LabOrder.update(refId, {
             payment_status: 'paid',
             test_status: 'pending'
           });
           orderUnlocked = true;
         } else if (visitId) {
           // If all lab tests in visit paid together
-          const labOrders = await base44.entities.LabOrder.filter({ visit_id: visitId });
+          const labOrders = await ethioCareClient.entities.LabOrder.filter({ visit_id: visitId });
           for (const lo of labOrders) {
-            await base44.entities.LabOrder.update(lo.id, {
+            await ethioCareClient.entities.LabOrder.update(lo.id, {
               payment_status: 'paid',
               test_status: 'pending'
             });
@@ -136,7 +136,7 @@ export const hospitalBillingService = {
 
         // Update visit to lab_paid if currently lab_pending
         if (visitId) {
-          await base44.entities.Visit.update(visitId, { status: 'lab_paid' });
+          await ethioCareClient.entities.Visit.update(visitId, { status: 'lab_paid' });
         }
 
         // Dispatch notification to Laboratory Portal
@@ -160,7 +160,7 @@ export const hospitalBillingService = {
         let medOrder = null;
 
         if (medOrderId) {
-          medOrder = await base44.entities.MedicationOrder.update(medOrderId, {
+          medOrder = await ethioCareClient.entities.MedicationOrder.update(medOrderId, {
             payment_status: 'paid',
             administration_status: 'pending',
             payment_id: payment.id,
@@ -183,11 +183,11 @@ export const hospitalBillingService = {
           const instructions = medOrder?.instructions || payment.order_notes || `Administer ${itemName}`;
 
           // Check if NurseTask already exists to avoid duplication
-          const existingTasks = await base44.entities.NurseTask.filter({ visit_id: effectiveVisitId });
+          const existingTasks = await ethioCareClient.entities.NurseTask.filter({ visit_id: effectiveVisitId });
           const taskExists = existingTasks.some(t => t.description?.includes(itemName));
 
           if (!taskExists) {
-            await base44.entities.NurseTask.create({
+            await ethioCareClient.entities.NurseTask.create({
               visit_id: effectiveVisitId,
               patient_id: effectivePatientId,
               patient_name: patientName,

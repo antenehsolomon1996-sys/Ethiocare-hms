@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
 import { FlaskConical, Clock, CheckCircle, Activity, ChevronRight } from 'lucide-react';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 export default function LabDashboard() {
   const { data: labOrders = [] } = useQuery({
     queryKey: ['labOrders'],
-    queryFn: () => base44.entities.LabOrder.list('-created_date', 100),
+    queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 100),
     refetchInterval: 10000
   });
 

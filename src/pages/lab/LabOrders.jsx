@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { ethioCareClient } from '@/api/ethioCareClient';
 import DataTable from '@/components/common/DataTable';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ export default function LabOrders() {
 
   const { data: labOrders = [], isLoading } = useQuery({ 
     queryKey: ['labOrders'], 
-    queryFn: () => base44.entities.LabOrder.list('-created_date', 200),
+    queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 200),
     refetchInterval: 10000
   });
 
@@ -34,9 +34,9 @@ export default function LabOrders() {
   const handleStartTest = async (order) => {
     setIsSubmitting(true);
     try {
-      await base44.entities.LabOrder.update(order.id, { test_status: 'in_progress' });
+      await ethioCareClient.entities.LabOrder.update(order.id, { test_status: 'in_progress' });
       if (order.visit_id) {
-        await base44.entities.Visit.update(order.visit_id, { status: 'lab_processing' });
+        await ethioCareClient.entities.Visit.update(order.visit_id, { status: 'lab_processing' });
       }
       queryClient.invalidateQueries({ queryKey: ['labOrders', 'visits'] });
       toast.success('Test started');
@@ -56,14 +56,14 @@ export default function LabOrders() {
     }
     setIsSubmitting(true);
     try {
-      await base44.entities.LabOrder.update(selected.id, { 
+      await ethioCareClient.entities.LabOrder.update(selected.id, { 
         test_status: 'completed', 
         results: results.trim(), 
         result_notes: resultNotes?.trim() || null,
         completed_date: format(new Date(), 'yyyy-MM-dd')
       });
       if (selected.visit_id) {
-        await base44.entities.Visit.update(selected.visit_id, { status: 'lab_complete' });
+        await ethioCareClient.entities.Visit.update(selected.visit_id, { status: 'lab_complete' });
       }
 
       notificationService.dispatch({
