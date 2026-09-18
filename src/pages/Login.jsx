@@ -33,14 +33,20 @@ const QUICK_ROLES = [
 ];
 
 const ROLE_ROUTES = {
-  owner: '/owner',
-  admin: '/owner',
+  owner: '/admin',
+  admin: '/admin',
   receptionist: '/reception',
+  reception: '/reception',
   doctor: '/doctor',
   nurse: '/nurse',
   lab_technician: '/lab',
+  lab: '/lab',
+  laboratory: '/lab',
   pharmacist: '/pharmacy',
+  pharmacy: '/pharmacy',
   accountant: '/billing',
+  billing: '/billing',
+  cashier: '/billing',
 };
 
 export default function Login() {
@@ -63,7 +69,9 @@ export default function Login() {
   // If already authenticated and not loading, navigate immediately to authorized portal
   useEffect(() => {
     if (!isLoadingAuth && isAuthenticated && user?.role) {
-      navigate(ROLE_ROUTES[user.role] || "/", { replace: true });
+      const normalizedRole = user.role.toLowerCase().trim();
+      const destination = ROLE_ROUTES[normalizedRole] || '/admin';
+      navigate(destination, { replace: true });
     }
   }, [isLoadingAuth, isAuthenticated, user, navigate]);
 
@@ -74,7 +82,8 @@ export default function Login() {
     try {
       const portalParam = targetPortal !== "auto" ? targetPortal : undefined;
       const profile = await login(email, credential, portalParam);
-      const destination = ROLE_ROUTES[profile.role] || "/";
+      const normalizedRole = profile?.role ? profile.role.toLowerCase().trim() : '';
+      const destination = ROLE_ROUTES[normalizedRole] || "/admin";
       navigate(destination, { replace: true });
     } catch (err) {
       setError(err.message || "Invalid hospital email or credentials");
@@ -91,7 +100,8 @@ export default function Login() {
     setLoading(true);
     try {
       const profile = await login(roleObj.email, roleObj.code, roleObj.role);
-      const destination = ROLE_ROUTES[profile.role] || "/";
+      const normalizedRole = profile?.role ? profile.role.toLowerCase().trim() : '';
+      const destination = ROLE_ROUTES[normalizedRole] || "/admin";
       navigate(destination, { replace: true });
     } catch (err) {
       setError(err.message || "Login failed");

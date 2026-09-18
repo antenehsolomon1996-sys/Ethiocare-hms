@@ -28,6 +28,7 @@ import { usePharmacyBranding } from '@/hooks/usePharmacyBranding';
 export const PORTAL_METADATA = {
   admin: {
     role: 'owner',
+    path: '/admin',
     allowedRoles: ['owner', 'admin'],
     title: 'Admin & Executive Portal',
     subtitle: 'Hospital governance, finance, employee salaries, and operations',
@@ -41,6 +42,7 @@ export const PORTAL_METADATA = {
   },
   reception: {
     role: 'receptionist',
+    path: '/reception',
     allowedRoles: ['receptionist', 'owner', 'admin'],
     title: 'Reception & Front Desk Portal',
     subtitle: 'Patient registration, 30-day tariff policies, queue, and checkout',
@@ -54,6 +56,7 @@ export const PORTAL_METADATA = {
   },
   doctor: {
     role: 'doctor',
+    path: '/doctor',
     allowedRoles: ['doctor'],
     title: 'Doctor & Clinical Portal',
     subtitle: 'Consultation queue, e-prescriptions, lab orders, and AI clinical assistant',
@@ -67,6 +70,7 @@ export const PORTAL_METADATA = {
   },
   nurse: {
     role: 'nurse',
+    path: '/nurse',
     allowedRoles: ['nurse'],
     title: 'Nursing & Inpatient Care Portal',
     subtitle: 'Vitals tracking, medication administration, and unified care tasks',
@@ -80,6 +84,7 @@ export const PORTAL_METADATA = {
   },
   lab: {
     role: 'lab_technician',
+    path: '/lab',
     allowedRoles: ['lab_technician'],
     title: 'Laboratory Diagnostic Portal',
     subtitle: 'Sample processing, specimen intake, and diagnostic test results',
@@ -93,6 +98,7 @@ export const PORTAL_METADATA = {
   },
   pharmacy: {
     role: 'pharmacist',
+    path: '/pharmacy',
     allowedRoles: ['pharmacist'],
     title: 'Central Pharmacy Portal',
     subtitle: 'Dispensing, walk-in sales, stock inventory, and invoice reconciliation',
@@ -106,6 +112,7 @@ export const PORTAL_METADATA = {
   },
   billing: {
     role: 'accountant',
+    path: '/billing',
     allowedRoles: ['accountant'],
     title: 'Hospital Billing & Cashier Desk',
     subtitle: 'Payment settlement, gate unlocking, receipts, and revenue reconciliation',
@@ -151,10 +158,13 @@ export default function PortalLoginPage({ portalKey = 'admin', onLoginSuccess })
       if (meta.allowedRoles.includes(user.role)) {
         if (onLoginSuccess) {
           onLoginSuccess(user);
+        } else {
+          const dest = meta.path || `/${portalKey}`;
+          navigate(dest, { replace: true });
         }
       }
     }
-  }, [isLoadingAuth, isAuthenticated, user, meta, onLoginSuccess]);
+  }, [isLoadingAuth, isAuthenticated, user, meta, onLoginSuccess, navigate, portalKey]);
 
   const handleSubmit = async (e) => {
     if (e?.preventDefault) e.preventDefault();
@@ -173,6 +183,9 @@ export default function PortalLoginPage({ portalKey = 'admin', onLoginSuccess })
 
       if (onLoginSuccess) {
         onLoginSuccess(profile);
+      } else {
+        const dest = meta.path || `/${portalKey}`;
+        navigate(dest, { replace: true });
       }
     } catch (err) {
       setError(err.message || 'Invalid hospital email or credentials');

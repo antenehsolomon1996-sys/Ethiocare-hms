@@ -19,20 +19,20 @@ export const roleConfig = {
     color: 'from-blue-600 to-blue-800',
     icon: LayoutDashboard,
     items: [
-      { path: '/owner', label: 'Dashboard', icon: LayoutDashboard },
-      { path: '/owner/finances', label: 'Finance Tracker', icon: DollarSign },
-      { path: '/owner/salaries', label: 'Employee Salaries', icon: Wallet },
-      { path: '/owner/staff', label: 'Staff Management', icon: Users },
-      { path: '/owner/doctors', label: 'Doctor Management', icon: Stethoscope },
-      { path: '/owner/patients', label: 'Patients', icon: Heart },
-      { path: '/owner/services', label: 'Services & Pricing', icon: CreditCard },
-      { path: '/owner/medicines', label: 'Medicines', icon: Pill },
-      { path: '/owner/lab-tests', label: 'Lab Tests', icon: FlaskConical },
-      { path: '/owner/fees', label: 'Fee Management', icon: CreditCard },
-      { path: '/owner/doctor-portals', label: 'Doctor Portals', icon: Building2 },
-      { path: '/owner/reports', label: 'Reports & Analytics', icon: BarChart2 },
-      { path: '/owner/audit-logs', label: 'Audit Logs', icon: Shield },
-      { path: '/owner/settings', label: 'Settings', icon: Settings },
+      { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/admin/finances', label: 'Finance Tracker', icon: DollarSign },
+      { path: '/admin/salaries', label: 'Employee Salaries', icon: Wallet },
+      { path: '/admin/staff', label: 'Staff Management', icon: Users },
+      { path: '/admin/doctors', label: 'Doctor Management', icon: Stethoscope },
+      { path: '/admin/patients', label: 'Patients', icon: Heart },
+      { path: '/admin/services', label: 'Services & Pricing', icon: CreditCard },
+      { path: '/admin/medicines', label: 'Medicines', icon: Pill },
+      { path: '/admin/lab-tests', label: 'Lab Tests', icon: FlaskConical },
+      { path: '/admin/fees', label: 'Fee Management', icon: CreditCard },
+      { path: '/admin/doctor-portals', label: 'Doctor Portals', icon: Building2 },
+      { path: '/admin/reports', label: 'Reports & Analytics', icon: BarChart2 },
+      { path: '/admin/audit-logs', label: 'Audit Logs', icon: Shield },
+      { path: '/admin/settings', label: 'Settings', icon: Settings },
     ]
   },
   admin: {
@@ -40,20 +40,20 @@ export const roleConfig = {
     color: 'from-blue-600 to-blue-800',
     icon: LayoutDashboard,
     items: [
-      { path: '/owner', label: 'Dashboard', icon: LayoutDashboard },
-      { path: '/owner/finances', label: 'Finance Tracker', icon: DollarSign },
-      { path: '/owner/salaries', label: 'Employee Salaries', icon: Wallet },
-      { path: '/owner/staff', label: 'Staff Management', icon: Users },
-      { path: '/owner/doctors', label: 'Doctor Management', icon: Stethoscope },
-      { path: '/owner/patients', label: 'Patients', icon: Heart },
-      { path: '/owner/services', label: 'Services & Pricing', icon: CreditCard },
-      { path: '/owner/medicines', label: 'Medicines', icon: Pill },
-      { path: '/owner/lab-tests', label: 'Lab Tests', icon: FlaskConical },
-      { path: '/owner/fees', label: 'Fee Management', icon: CreditCard },
-      { path: '/owner/doctor-portals', label: 'Doctor Portals', icon: Building2 },
-      { path: '/owner/reports', label: 'Reports & Analytics', icon: BarChart2 },
-      { path: '/owner/audit-logs', label: 'Audit Logs', icon: Shield },
-      { path: '/owner/settings', label: 'Settings', icon: Settings },
+      { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/admin/finances', label: 'Finance Tracker', icon: DollarSign },
+      { path: '/admin/salaries', label: 'Employee Salaries', icon: Wallet },
+      { path: '/admin/staff', label: 'Staff Management', icon: Users },
+      { path: '/admin/doctors', label: 'Doctor Management', icon: Stethoscope },
+      { path: '/admin/patients', label: 'Patients', icon: Heart },
+      { path: '/admin/services', label: 'Services & Pricing', icon: CreditCard },
+      { path: '/admin/medicines', label: 'Medicines', icon: Pill },
+      { path: '/admin/lab-tests', label: 'Lab Tests', icon: FlaskConical },
+      { path: '/admin/fees', label: 'Fee Management', icon: CreditCard },
+      { path: '/admin/doctor-portals', label: 'Doctor Portals', icon: Building2 },
+      { path: '/admin/reports', label: 'Reports & Analytics', icon: BarChart2 },
+      { path: '/admin/audit-logs', label: 'Audit Logs', icon: Shield },
+      { path: '/admin/settings', label: 'Settings', icon: Settings },
     ]
   },
   receptionist: {
@@ -201,7 +201,11 @@ export default function Sidebar({ role }) {
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {config.items.map((item) => {
           const ItemIcon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path ||
+            (location.pathname === '/owner' && item.path === '/admin') ||
+            (location.pathname === '/admin' && item.path === '/owner') ||
+            (location.pathname.replace(/^\/owner/, '/admin') === item.path) ||
+            (location.pathname.replace(/^\/admin/, '/owner') === item.path);
           return (
             <Link
               key={item.path}

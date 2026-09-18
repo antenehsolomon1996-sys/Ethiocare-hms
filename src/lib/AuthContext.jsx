@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { authService } from '@/services/auth.service';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -13,13 +13,20 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState({ id: 'ethiocare-hms', public_settings: {} });
 
+  const isLoggingInRef = useRef(false);
+  const userRef = useRef(user);
+  userRef.current = user;
+
   // Core session initialization and restoration
-  const checkUserAuth = useCallback(async () => {
+  const checkUserAuth = useCallback(async (session) => {
+    if (isLoggingInRef.current) {
+      return;
+    }
     try {
       setIsLoadingAuth(true);
       setAuthError(null);
 
-      const currentUser = await authService.getCurrentUser();
+      const currentUser = await authService.getCurrentUser(session);
 
       if (!currentUser) {
         setUser(null);
@@ -59,8 +66,9 @@ export const AuthProvider = ({ children }) => {
     await checkUserAuth();
   }, [checkUserAuth]);
 
-  // Direct login action called from Login.jsx
+  // Direct login action called from Login.jsx or PortalLoginPage.jsx
   const login = useCallback(async (email, credential, targetPortal) => {
+    isLoggingInRef.current = true;
     setIsLoadingAuth(true);
     setAuthError(null);
     try {
@@ -69,8 +77,12 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+      setTimeout(() => {
+        isLoggingInRef.current = false;
+      }, 1500);
       return profile;
     } catch (err) {
+      isLoggingInRef.current = false;
       setIsLoadingAuth(false);
       setAuthChecked(true);
       throw err;
@@ -83,9 +95,18 @@ export const AuthProvider = ({ children }) => {
 
     if (isSupabaseConfigured()) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (isLoggingInRef.current) {
+          return;
+        }
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
-            await checkUserAuth();
+            // Avoid redundant check if user is already loaded and matches this session
+            if (userRef.current?.id === session.user.id || userRef.current?.email?.toLowerCase() === session.user.email?.toLowerCase()) {
+              setIsLoadingAuth(false);
+              setAuthChecked(true);
+              return;
+            }
+            await checkUserAuth(session);
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -93,8 +114,6 @@ export const AuthProvider = ({ children }) => {
           setIsLoadingAuth(false);
           setAuthChecked(true);
         }
-        // NOTE: On INITIAL_SESSION with session = null, do NOT wipe user state!
-        // checkAppState() / checkUserAuth() is already actively restoring the hospital staff session.
       });
 
       return () => {

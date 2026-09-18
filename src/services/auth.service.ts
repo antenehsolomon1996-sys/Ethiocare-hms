@@ -101,6 +101,10 @@ export const authService = {
       updated_at: new Date().toISOString(),
     };
 
+    // Pre-save active staff session in localStorage before signing into Supabase Auth
+    // to prevent any race condition or lock delay during onAuthStateChange
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(safeProfile));
+
     // Establish real Supabase Auth session so PostgREST receives Authorization: Bearer <jwt> with role: authenticated and auth.uid()
     if (isSupabaseConfigured()) {
       let authRes = await supabase.auth.signInWithPassword({
@@ -209,49 +213,97 @@ export const authService = {
   },
 
   /**
-   * Fetch user profile from Supabase profiles table, or fallback to staff record
+   * Fetch user profile from staff record or Supabase profiles table
    */
   async getProfile(userId: string, email?: string): Promise<Profile> {
-    if (isSupabaseConfigured()) {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+    const cleanEmail = email ? email.toLowerCase().trim() : '';
 
-      if (profile && !error) {
-        return profile as Profile;
+    if (isSupabaseConfigured()) {
+      // 1. Staff table lookup by email first (hospital staff is the primary source of truth)
+      if (cleanEmail) {
+        try {
+          const { data: staffMember, error } = await supabase
+            .from('staff')
+            .select('id, full_name, email, role, department, specialization, phone, status, created_at, updated_at')
+            .eq('email', cleanEmail)
+            .maybeSingle();
+
+          if (!error && staffMember) {
+            const staffProfile: Profile = {
+              id: userId,
+              email: staffMember.email,
+              full_name: staffMember.full_name,
+              role: staffMember.role,
+              department: staffMember.department || '',
+              specialization: staffMember.specialization || '',
+              phone: staffMember.phone || '',
+              status: staffMember.status,
+              avatar_url: null,
+              created_at: staffMember.created_at || new Date().toISOString(),
+              updated_at: staffMember.updated_at || new Date().toISOString(),
+            };
+            return staffProfile;
+          }
+        } catch (err) {
+          console.warn('[authService] Staff lookup by email error:', err);
+        }
       }
 
-      if (email) {
-        const { data: staffMember } = await supabase
-          .from('staff')
-          .select('id, full_name, email, role, department, specialization, phone, status, created_at, updated_at')
-          .eq('email', email.toLowerCase().trim())
+      // 2. Lookup by id in staff table
+      if (userId) {
+        try {
+          const { data: staffMember, error } = await supabase
+            .from('staff')
+            .select('id, full_name, email, role, department, specialization, phone, status, created_at, updated_at')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (!error && staffMember) {
+            const staffProfile: Profile = {
+              id: userId,
+              email: staffMember.email,
+              full_name: staffMember.full_name,
+              role: staffMember.role,
+              department: staffMember.department || '',
+              specialization: staffMember.specialization || '',
+              phone: staffMember.phone || '',
+              status: staffMember.status,
+              avatar_url: null,
+              created_at: staffMember.created_at || new Date().toISOString(),
+              updated_at: staffMember.updated_at || new Date().toISOString(),
+            };
+            return staffProfile;
+          }
+        } catch (err) {
+          console.warn('[authService] Staff lookup by id error:', err);
+        }
+      }
+
+      // 3. Fallback to profiles table
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
           .maybeSingle();
 
-        if (staffMember) {
-          const newProfile: Profile = {
-            id: userId,
-            email: staffMember.email,
-            full_name: staffMember.full_name,
-            role: staffMember.role,
-            department: staffMember.department || '',
-            specialization: staffMember.specialization || '',
-            phone: staffMember.phone || '',
-            status: staffMember.status,
-            avatar_url: null,
-            created_at: staffMember.created_at || new Date().toISOString(),
-            updated_at: staffMember.updated_at || new Date().toISOString(),
-          };
-
-          return newProfile;
+        if (profile && !error) {
+          return profile as Profile;
         }
+      } catch (err) {
+        console.warn('[authService] Profiles table lookup error:', err);
       }
     }
 
     const stored = localStorage.getItem(AUTH_SESSION_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed) return parsed;
+      } catch {
+        // ignore
+      }
+    }
 
     throw new Error('Profile not found');
   },
@@ -274,31 +326,39 @@ export const authService = {
    * Get currently active session profile.
    * Restores session from localStorage and verifies against live Supabase database.
    */
-  async getCurrentUser(): Promise<Profile | null> {
-    // 1. Check live Supabase Auth session first
+  async getCurrentUser(providedSession?: any): Promise<Profile | null> {
+    // Fast path: if localStorage has neither a stored profile nor a Supabase token, and no session was provided, user is unauthenticated
+    const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(AUTH_SESSION_KEY) : null;
+    const hasSupabaseToken = typeof localStorage !== 'undefined' &&
+      Object.keys(localStorage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+
+    if (!stored && !hasSupabaseToken && !providedSession) {
+      return null;
+    }
+
+    // Check if cached profile exists in localStorage
+    let cachedProfile: Profile | null = null;
+    if (stored) {
+      try {
+        cachedProfile = JSON.parse(stored) as Profile;
+      } catch {
+        localStorage.removeItem(AUTH_SESSION_KEY);
+      }
+    }
+
+    // 1. Live Supabase Auth session check
     if (isSupabaseConfigured()) {
       try {
-        let { data: { session } } = await supabase.auth.getSession();
+        let session = providedSession;
 
-        // If no active Supabase Auth session exists, attempt auto-reconnect using stored hospital profile
-        if (!session?.user) {
-          const stored = localStorage.getItem(AUTH_SESSION_KEY);
-          if (stored) {
-            try {
-              const profile = JSON.parse(stored) as Profile;
-              if (profile?.email) {
-                const signInRes = await supabase.auth.signInWithPassword({
-                  email: profile.email.toLowerCase().trim(),
-                  password: 'Hospital@2026',
-                });
-                if (signInRes.data?.session) {
-                  session = signInRes.data.session;
-                }
-              }
-            } catch (reconErr) {
-              console.warn('[authService] Auto-reconnect notice:', reconErr);
-            }
-          }
+        if (!session) {
+          // Wrap getSession with a timeout to avoid Web Locks API deadlock
+          const getSessionPromise = supabase.auth.getSession();
+          const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) =>
+            setTimeout(() => resolve({ data: { session: null } }), 3500)
+          );
+          const res = await Promise.race([getSessionPromise, timeoutPromise]);
+          session = res?.data?.session;
         }
 
         if (session?.user) {
@@ -309,53 +369,17 @@ export const authService = {
               return profile;
             }
           } catch {
-            // fallback to stored session
+            if (cachedProfile) return cachedProfile;
           }
         }
-      } catch {
-        // fallback
+      } catch (err) {
+        console.warn('[authService] Session resolution warning:', err);
       }
     }
 
-    // 2. Check stored hospital staff session
-    const stored = localStorage.getItem(AUTH_SESSION_KEY);
-    if (stored) {
-      try {
-        const profile = JSON.parse(stored) as Profile;
-        // Verify against live Supabase database
-        if (isSupabaseConfigured() && profile.email) {
-          try {
-            const { data: staffMember, error } = await supabase
-              .from('staff')
-              .select('id, full_name, email, role, department, specialization, phone, status, created_at, updated_at')
-              .eq('email', profile.email.toLowerCase().trim())
-              .maybeSingle();
-
-            if (!error && staffMember) {
-              if (staffMember.status !== 'active') {
-                localStorage.removeItem(AUTH_SESSION_KEY);
-                return null;
-              }
-              const freshProfile: Profile = {
-                ...profile,
-                full_name: staffMember.full_name || profile.full_name,
-                role: staffMember.role || profile.role,
-                department: staffMember.department || profile.department,
-                specialization: staffMember.specialization || profile.specialization,
-                phone: staffMember.phone || profile.phone,
-                status: staffMember.status,
-              };
-              localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(freshProfile));
-              return freshProfile;
-            }
-          } catch (verifyErr) {
-            console.warn('[authService] Error validating live profile against staff table:', verifyErr);
-          }
-        }
-        return profile;
-      } catch {
-        localStorage.removeItem(AUTH_SESSION_KEY);
-      }
+    // 2. Return cached profile if active
+    if (cachedProfile && cachedProfile.status === 'active') {
+      return cachedProfile;
     }
 
     return null;

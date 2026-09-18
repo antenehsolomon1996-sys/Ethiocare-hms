@@ -47,34 +47,46 @@ const ROOT_ROUTES = ['/admin', '/owner', '/reception', '/doctor', '/nurse', '/la
 const PORTAL_ACCESS = {
   owner: ['owner', 'admin'],
   admin: ['owner', 'admin'],
-  receptionist: ['receptionist', 'owner', 'admin'],
+  receptionist: ['receptionist', 'reception', 'owner', 'admin'],
   doctor: ['doctor'],
   nurse: ['nurse'],
-  lab_technician: ['lab_technician'],
-  pharmacist: ['pharmacist'],
-  accountant: ['accountant'],
+  lab_technician: ['lab_technician', 'lab', 'laboratory'],
+  pharmacist: ['pharmacist', 'pharmacy'],
+  accountant: ['accountant', 'billing', 'cashier'],
 };
 
 const ROLE_TO_PORTAL_KEY = {
   owner: 'admin',
   admin: 'admin',
   receptionist: 'reception',
+  reception: 'reception',
   doctor: 'doctor',
   nurse: 'nurse',
   lab_technician: 'lab',
+  lab: 'lab',
+  laboratory: 'lab',
   pharmacist: 'pharmacy',
+  pharmacy: 'pharmacy',
   accountant: 'billing',
+  billing: 'billing',
+  cashier: 'billing',
 };
 
 const ROLE_ROUTES = {
-  owner: '/owner',
-  admin: '/owner',
+  owner: '/admin',
+  admin: '/admin',
   receptionist: '/reception',
+  reception: '/reception',
   doctor: '/doctor',
   nurse: '/nurse',
   lab_technician: '/lab',
+  lab: '/lab',
+  laboratory: '/lab',
   pharmacist: '/pharmacy',
+  pharmacy: '/pharmacy',
   accountant: '/billing',
+  billing: '/billing',
+  cashier: '/billing',
 };
 
 export default function PortalLayout({ role }) {
@@ -127,7 +139,16 @@ export default function PortalLayout({ role }) {
       );
     }
     const portalKey = ROLE_TO_PORTAL_KEY[role] || 'admin';
-    return <PortalLoginPage portalKey={portalKey} />;
+    return (
+      <PortalLoginPage
+        portalKey={portalKey}
+        onLoginSuccess={(profile) => {
+          const userRole = profile?.role ? profile.role.toLowerCase().trim() : role;
+          const dest = ROLE_ROUTES[userRole] || ROLE_ROUTES[role] || '/admin';
+          navigate(dest, { replace: true });
+        }}
+      />
+    );
   }
 
   // RBAC: verify the logged-in user's role matches this portal
