@@ -1,0 +1,91 @@
+{
+  "name": "PatientHistory",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to Patient entity"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "patient_phone": {
+      "type": "string"
+    },
+    "patient_gender": {
+      "type": "string"
+    },
+    "patient_dob": {
+      "type": "string",
+      "format": "date"
+    },
+    "visit_id": {
+      "type": "string",
+      "description": "Reference to Visit entity"
+    },
+    "visit_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "doctor_specialty": {
+      "type": "string"
+    },
+    "symptoms": {
+      "type": "string"
+    },
+    "diagnosis": {
+      "type": "string"
+    },
+    "treatment": {
+      "type": "string"
+    },
+    "prescription": {
+      "type": "string",
+      "description": "Summary of prescribed medications"
+    },
+    "lab_results": {
+      "type": "string",
+      "description": "Summary of lab results"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Medical notes by doctor"
+    },
+    "follow_up_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "blood_pressure": {
+      "type": "string"
+    },
+    "temperature": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string"
+    },
+    "pulse": {
+      "type": "string"
+    },
+    "record_type": {
+      "type": "string",
+      "enum": [
+        "visit",
+        "lab",
+        "prescription",
+        "note",
+        "vitals"
+      ],
+      "default": "visit"
+    }
+  },
+  "required": [
+    "patient_id",
+    "patient_name",
+    "visit_date",
+    "doctor_name"
+  ]
+}

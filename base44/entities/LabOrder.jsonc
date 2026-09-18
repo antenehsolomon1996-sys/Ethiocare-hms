@@ -1,0 +1,85 @@
+{
+  "name": "LabOrder",
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "test_type": {
+      "type": "string",
+      "enum": [
+        "Blood Test",
+        "Urine Test",
+        "Stool Test",
+        "Malaria Test",
+        "HIV Test",
+        "Typhoid Test",
+        "CBC",
+        "Liver Function",
+        "Kidney Function",
+        "Blood Sugar",
+        "Lipid Profile",
+        "Thyroid",
+        "X-Ray",
+        "Ultrasound",
+        "Other"
+      ]
+    },
+    "test_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "test_status": {
+      "type": "string",
+      "enum": [
+        "awaiting_payment",
+        "pending",
+        "in_progress",
+        "completed"
+      ],
+      "default": "awaiting_payment"
+    },
+    "results": {
+      "type": "string"
+    },
+    "result_notes": {
+      "type": "string"
+    },
+    "result_file_url": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "completed_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "visit_id",
+    "patient_id",
+    "patient_name",
+    "test_type"
+  ]
+}

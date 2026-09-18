@@ -1,0 +1,43 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "owner",
+        "receptionist",
+        "doctor",
+        "nurse",
+        "lab_technician",
+        "pharmacist",
+        "accountant"
+      ],
+      "default": "user"
+    },
+    "department": {
+      "type": "string"
+    },
+    "specialization": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "retired"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "department",
+    "specialization",
+    "phone"
+  ]
+}

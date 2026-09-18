@@ -1,0 +1,46 @@
+{
+  "name": "Vital",
+  "type": "object",
+  "properties": {
+    "visit_id": {
+      "type": "string"
+    },
+    "patient_id": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "blood_pressure_systolic": {
+      "type": "number"
+    },
+    "blood_pressure_diastolic": {
+      "type": "number"
+    },
+    "temperature": {
+      "type": "number"
+    },
+    "pulse": {
+      "type": "number"
+    },
+    "weight": {
+      "type": "number"
+    },
+    "height": {
+      "type": "number"
+    },
+    "oxygen_level": {
+      "type": "number"
+    },
+    "nurse_notes": {
+      "type": "string"
+    },
+    "recorded_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "visit_id",
+    "patient_id"
+  ]
+}
