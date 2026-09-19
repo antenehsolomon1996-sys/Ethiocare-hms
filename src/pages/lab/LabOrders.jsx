@@ -11,12 +11,16 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { notificationService } from '@/services/notification.service';
+import { useAuth } from '@/lib/AuthContext';
+import { User, FlaskConical } from 'lucide-react';
 
 export default function LabOrders() {
+  const { user } = useAuth();
   const [selected, setSelected] = useState(null);
   const [results, setResults] = useState('');
   const [resultNotes, setResultNotes] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [scope, setScope] = useState('my'); // 'my' | 'all'
   const queryClient = useQueryClient();
 
   const { data: labOrders = [], isLoading } = useQuery({ 
@@ -29,7 +33,22 @@ export default function LabOrders() {
 
   // CRITICAL: Only show PAID orders - unpaid must NEVER appear
   const paidOrders = labOrders.filter(o => o.payment_status === 'paid');
-  const filtered = statusFilter === 'all' ? paidOrders : paidOrders.filter(o => o.test_status === statusFilter);
+
+  const isAssignedToMe = (order) => {
+    if (!user) return true;
+    const myId = String(user.id || '').trim();
+    const myName = String(user.full_name || '').toLowerCase().trim();
+    const assignedId = String(order.assigned_assistant_id || '').trim();
+    const assignedName = String(order.assigned_assistant_name || '').toLowerCase().trim();
+
+    if (!assignedId && !assignedName) return true;
+    if (assignedId && myId && assignedId === myId) return true;
+    if (assignedName && myName && (assignedName.includes(myName) || myName.includes(assignedName))) return true;
+    return false;
+  };
+
+  const scopedPaidOrders = scope === 'my' ? paidOrders.filter(isAssignedToMe) : paidOrders;
+  const filtered = statusFilter === 'all' ? scopedPaidOrders : scopedPaidOrders.filter(o => o.test_status === statusFilter);
 
   const handleStartTest = async (order) => {
     if (!order?.id) return;
@@ -102,9 +121,21 @@ export default function LabOrders() {
     { header: 'Test Type', accessor: 'test_type' },
     { header: 'Test Name', accessor: 'test_name' },
     { header: 'Doctor', accessor: 'doctor_name' },
+    { 
+      header: 'Assigned Assistant', 
+      cell: (r) => (
+        <span className="text-xs">
+          {r.assigned_assistant_name ? (
+            <span className="font-medium text-foreground">{r.assigned_assistant_name}</span>
+          ) : (
+            <span className="text-muted-foreground italic">Unassigned (Lab Pool)</span>
+          )}
+        </span>
+      )
+    },
     { header: 'Status', cell: (r) => <StatusBadge status={r.test_status} /> },
     { header: 'Action', cell: (r) => {
-      if (r.test_status === 'pending') return (
+      if (r.test_status === 'pending' || r.test_status === 'awaiting_sample' || !r.test_status) return (
         <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleStartTest(r); }}>Start Test</Button>
       );
       if (r.test_status === 'in_progress') return (
@@ -117,23 +148,49 @@ export default function LabOrders() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Lab Orders</h1>
-          <p className="text-xs text-muted-foreground">Only showing paid orders</p>
+          <h1 className="text-2xl font-bold tracking-tight">Lab Diagnostic Orders</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Strict Payment Gate: Showing <strong>{paidOrders.length} paid</strong> orders · Logged in as: <strong>{user?.full_name || 'Lab Assistant'}</strong>
+          </p>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="in_progress">In Progress</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border">
+            <Button
+              size="sm"
+              variant={scope === 'my' ? 'default' : 'ghost'}
+              className="h-8 text-xs font-medium rounded-lg px-3"
+              onClick={() => setScope('my')}
+            >
+              <User className="w-3.5 h-3.5 mr-1" />
+              Assigned to Me
+            </Button>
+            <Button
+              size="sm"
+              variant={scope === 'all' ? 'default' : 'ghost'}
+              className="h-8 text-xs font-medium rounded-lg px-3"
+              onClick={() => setScope('all')}
+            >
+              <FlaskConical className="w-3.5 h-3.5 mr-1" />
+              All Paid Orders
+            </Button>
+          </div>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-36 h-9 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <DataTable columns={columns} data={filtered} isLoading={isLoading} emptyMessage="No paid lab orders" />
+      <DataTable columns={columns} data={filtered} isLoading={isLoading} emptyMessage="No paid lab diagnostic orders found" />
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent>

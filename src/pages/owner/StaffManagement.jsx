@@ -170,8 +170,32 @@ export default function StaffManagement() {
           description: `Hospital email: ${form.email}`,
           duration: 10000,
         });
+        // If role is doctor, ensure a corresponding Doctor entity exists
+        if (form.role === 'doctor') {
+          try {
+            const existingDocs = await ethioCareClient.entities.Doctor.list();
+            const exists = existingDocs.find(d => 
+              (d.email && d.email.toLowerCase() === form.email.toLowerCase()) ||
+              (d.full_name && d.full_name.toLowerCase() === form.full_name.toLowerCase())
+            );
+            if (!exists) {
+              await ethioCareClient.entities.Doctor.create({
+                full_name: form.full_name,
+                email: form.email,
+                specialty: form.specialization || form.department || 'General Practice',
+                doctor_type: 'Staff Doctor',
+                status: form.status || 'active',
+                availability: 'available'
+              });
+              queryClient.invalidateQueries({ queryKey: ['doctors'] });
+            }
+          } catch (syncErr) {
+            console.warn('[StaffManagement] Doctor sync note:', syncErr);
+          }
+        }
       }
       queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors'] });
     } catch (err) {
       toast.error(err.message || 'Failed to save staff member');
     }

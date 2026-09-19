@@ -10,26 +10,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Stethoscope, FlaskConical, Pill, ClipboardList, History, User, Syringe, AlertTriangle, ChevronLeft, Sparkles } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Stethoscope, FlaskConical, Pill, ClipboardList, History, User, Syringe, AlertTriangle, ChevronLeft, Sparkles, Building2 } from 'lucide-react';
 import MedicationOrderForm from '@/components/doctor/MedicationOrderForm';
 import AIClinicalAssistant from '@/components/doctor/AIClinicalAssistant';
 import { format } from 'date-fns';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import PatientHistoryView from '@/pages/shared/PatientHistoryView';
 import { logAudit } from '@/lib/auditLogger';
 import { notificationService } from '@/services/notification.service';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { calculateLabAssistantAvailability } from '@/services/staffAvailability.service';
 
 export default function DoctorQueue() {
   const { selectedDoctor } = useDoctorContext();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [selected, setSelected] = useState(null);
-  const [labForm, setLabForm] = useState({ test_type: 'Blood Test', test_name: '', notes: '', lab_test_id: '' });
+  const [labForm, setLabForm] = useState({ test_type: 'Blood Test', test_name: '', notes: '', lab_test_id: '', assigned_assistant_id: '', assigned_assistant_name: '' });
   const [prescForm, setPrescForm] = useState({ medicine_name: '', medicine_id: '', dosage: '', frequency: '', duration: '', quantity: '1', instructions: '' });
   const [examForm, setExamForm] = useState({ symptoms: '', examination_notes: '', diagnosis: '', disease: '', treatment_plan: '' });
   const [finalForm, setFinalForm] = useState({ final_diagnosis: '', final_treatment: '', follow_up_date: '', follow_up_notes: '' });
+  const [bedModalOpen, setBedModalOpen] = useState(false);
+  const [bedRequestForm, setBedRequestForm] = useState({ department: 'Inpatient Ward', notes: '' });
 
   const { data: visits = [] } = useQuery({
     queryKey: ['visits'],
@@ -42,7 +46,19 @@ export default function DoctorQueue() {
   const { data: medicationOrders = [] } = useQuery({ queryKey: ['medicationOrders'], queryFn: () => ethioCareClient.entities.MedicationOrder.list('-created_date', 200) });
   const { data: availableLabTests = [] } = useQuery({ queryKey: ['labTests'], queryFn: () => ethioCareClient.entities.LabTest.list() });
   const { data: availableMedicines = [] } = useQuery({ queryKey: ['medicines'], queryFn: () => ethioCareClient.entities.Medicine.list() });
+  const { data: staffList = [] } = useQuery({ queryKey: ['staff'], queryFn: () => ethioCareClient.entities.Staff.list() });
 
+  const labAssistantsWithAvailability = useMemo(() => {
+    const rawStaff = staffList.filter(s => s.role === 'lab_technician' || s.role === 'lab_assistant');
+    const base = rawStaff.length > 0 ? rawStaff : [
+      { id: 'stf-6', full_name: 'Kidus Worku', role: 'lab_technician' },
+      { id: 'stf-lab-2', full_name: 'Dawit Lab Technician', role: 'lab_technician' }
+    ];
+    return base.map(a => ({
+      ...a,
+      availability: calculateLabAssistantAvailability(a, labOrders)
+    }));
+  }, [staffList, labOrders]);
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const myDoctorId = selectedDoctor?.id;
@@ -152,6 +168,8 @@ export default function DoctorQueue() {
         patient_name: selected.patient_name,
         doctor_name: selectedDoctor?.full_name || null,
         doctor_id: myDoctorId || null,
+        assigned_assistant_id: labForm.assigned_assistant_id || null,
+        assigned_assistant_name: labForm.assigned_assistant_name || null,
         test_type: testCategory,
         test_name: testName,
         notes: labForm.notes || null,
@@ -173,7 +191,7 @@ export default function DoctorQueue() {
       await ethioCareClient.entities.Visit.update(selected.id, { status: 'lab_pending' });
       queryClient.invalidateQueries({ queryKey: ['labOrders', 'visits', 'payments'] });
       toast.success(`Lab order "${testName}" created (${price} ETB) — sent to billing`);
-      logAudit({ userName: selectedDoctor?.full_name, userRole: 'doctor', action: 'create', module: 'LabOrder', description: `Ordered ${testName} (${price} ETB) for ${selected.patient_name}`, recordId: labOrder.id, recordName: selected.patient_name });
+      logAudit({ userName: selectedDoctor?.full_name, userRole: 'doctor', action: 'create', module: 'LabOrder', description: `Ordered ${testName} (${price} ETB) for ${selected.patient_name}${labForm.assigned_assistant_name ? ` (assigned to ${labForm.assigned_assistant_name})` : ''}`, recordId: labOrder.id, recordName: selected.patient_name });
       notificationService.dispatch({
         title: 'Pending Lab Payment Required',
         message: `Lab fee for "${testName}" (${price} ETB) for ${selected.patient_name} awaiting payment at Billing desk.`,
@@ -182,10 +200,69 @@ export default function DoctorQueue() {
         targetRoles: ['accountant', 'receptionist', 'owner'],
         link: '/billing/payments'
       });
-      setLabForm({ test_type: 'Blood Test', test_name: '', notes: '', lab_test_id: '' });
+
+      if (labForm.assigned_assistant_id || labForm.assigned_assistant_name) {
+        notificationService.dispatch({
+          title: 'New Diagnostic Test Assigned',
+          message: `Diagnostic test "${testName}" for ${selected.patient_name} assigned to you by Dr. ${selectedDoctor?.full_name || 'Attending Doctor'}. Payment required before processing.`,
+          type: 'info',
+          module: 'lab',
+          targetRoles: ['lab_technician'],
+          targetUserId: labForm.assigned_assistant_id,
+          targetStaffName: labForm.assigned_assistant_name,
+          link: '/lab/orders'
+        });
+      }
+
+      setLabForm({ test_type: 'Blood Test', test_name: '', notes: '', lab_test_id: '', assigned_assistant_id: '', assigned_assistant_name: '' });
     } catch (err) {
       console.error('[DoctorQueue] Error ordering lab:', err);
       toast.error(err.message || 'Failed to create lab order');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRequestBedAdmission = async () => {
+    if (!selected) return;
+    setActionLoading(true);
+    try {
+      // 1. Update visit to bed_requested
+      await ethioCareClient.entities.Visit.update(selected.id, {
+        bed_status: 'bed_requested',
+        notes: bedRequestForm.notes ? `${selected.notes || ''}\n[Inpatient Admission]: ${bedRequestForm.notes}` : selected.notes
+      });
+
+      // 2. Create pending payment for bed admission fee
+      await ethioCareClient.entities.Payment.create({
+        visit_id: selected.id,
+        patient_id: selected.patient_id,
+        patient_name: selected.patient_name,
+        payment_type: 'bed',
+        description: `Inpatient Admission Fee (${bedRequestForm.department})`,
+        amount: 500,
+        status: 'pending',
+        reference_type: 'bed_admission',
+        reference_id: selected.id
+      });
+
+      // 3. Dispatch notification to Reception & Billing
+      notificationService.dispatch({
+        title: 'Inpatient Bed Admission Requested',
+        message: `Dr. ${selectedDoctor?.full_name || 'Attending Doctor'} requested bed admission for ${selected.patient_name}. Reception please collect admission fee and assign room/bed.`,
+        type: 'warning',
+        module: 'patient',
+        targetRoles: ['receptionist', 'accountant', 'owner', 'nurse'],
+        link: '/reception/beds'
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['visits', 'payments'] });
+      toast.success(`Bed admission requested for ${selected.patient_name}. Sent to Reception Desk.`);
+      setBedModalOpen(false);
+      setBedRequestForm({ department: 'Inpatient Ward', notes: '' });
+    } catch (err) {
+      console.error('[DoctorQueue] Error requesting bed admission:', err);
+      toast.error(err.message || 'Failed to request bed admission');
     } finally {
       setActionLoading(false);
     }
@@ -408,10 +485,34 @@ export default function DoctorQueue() {
               <div className="bg-card rounded-xl border border-border p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h2 className="text-lg font-bold">{selected.patient_name}</h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-lg font-bold">{selected.patient_name}</h2>
+                      {selected.bed_assigned && selected.room_number ? (
+                        <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300 text-xs">
+                          🏨 Room {selected.room_number} → Bed {selected.bed_number || 'Assigned'}
+                        </Badge>
+                      ) : selected.bed_status === 'bed_requested' ? (
+                        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 text-xs">
+                          ⏳ Bed Requested (Pending Admission Fee)
+                        </Badge>
+                      ) : null}
+                    </div>
                     <p className="text-xs text-muted-foreground">Queue #{selected.queue_number} · {selected.visit_date}</p>
                   </div>
-                  <StatusBadge status={selected.status} />
+                  <div className="flex items-center gap-2">
+                    {!selected.bed_assigned && selected.bed_status !== 'bed_requested' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setBedModalOpen(true)}
+                        className="text-xs border-indigo-200 text-indigo-700 dark:text-indigo-300 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+                      >
+                        <Building2 className="w-3.5 h-3.5 mr-1" />
+                        Admit to Bed
+                      </Button>
+                    )}
+                    <StatusBadge status={selected.status} />
+                  </div>
                 </div>
                 <TabsList className="w-full flex overflow-x-auto gap-1 scrollbar-hide">
                   <TabsTrigger value="examination" className="shrink-0 text-xs"><Stethoscope className="w-3 h-3 mr-1" />Exam</TabsTrigger>
@@ -489,6 +590,50 @@ export default function DoctorQueue() {
                           {availableLabTests.filter(t => t.status === 'active').map(t => (
                             <SelectItem key={t.id} value={t.id}>
                               {t.name} — {t.price} ETB {t.turnaround_time ? `(${t.turnaround_time})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-xs font-semibold">Assign Specific Lab Assistant</Label>
+                        <span className="text-[11px] text-muted-foreground">Live Shift Availability</span>
+                      </div>
+                      <Select
+                        value={labForm.assigned_assistant_name || '__any'}
+                        onValueChange={val => {
+                          if (val === '__any') {
+                            setLabForm(f => ({ ...f, assigned_assistant_id: '', assigned_assistant_name: '' }));
+                          } else {
+                            const asst = labAssistantsWithAvailability.find(a => a.full_name === val);
+                            setLabForm(f => ({
+                              ...f,
+                              assigned_assistant_id: asst?.id || '',
+                              assigned_assistant_name: asst?.full_name || val
+                            }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-10 text-sm">
+                          <SelectValue placeholder="Any Available Lab Assistant (Lab Pool)" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60">
+                          <SelectItem value="__any">Any Available Lab Assistant (Lab Duty Pool)</SelectItem>
+                          {labAssistantsWithAvailability.map(a => (
+                            <SelectItem key={a.id || a.full_name} value={a.full_name}>
+                              <div className="flex items-center justify-between gap-3 w-full py-0.5">
+                                <span className="font-medium text-foreground">{a.full_name}</span>
+                                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${a.availability?.badgeClass || 'bg-slate-100 text-slate-700'}`}>
+                                    {a.availability?.statusLabel}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded">
+                                    {a.availability?.totalWorkload} in queue
+                                  </span>
+                                </div>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -692,6 +837,70 @@ export default function DoctorQueue() {
           )}
         </div>
       </div>
+
+      {/* Bed Admission Request Dialog */}
+      <Dialog open={bedModalOpen} onOpenChange={setBedModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-indigo-600" />
+              Request Inpatient Bed Admission
+            </DialogTitle>
+            <DialogDescription>
+              Submit an inpatient admission order for <strong>{selected?.patient_name}</strong>. Reception will collect the admission deposit and assign a room & bed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="text-xs font-semibold">Recommended Ward / Department</Label>
+              <Select
+                value={bedRequestForm.department}
+                onValueChange={val => setBedRequestForm(f => ({ ...f, department: val }))}
+              >
+                <SelectTrigger className="h-10 mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="General Inpatient">General Ward (Floor 1)</SelectItem>
+                  <SelectItem value="Pediatrics">Pediatric Ward (Floor 1)</SelectItem>
+                  <SelectItem value="Inpatient Ward">Semi-Private / Standard Ward (Floor 2)</SelectItem>
+                  <SelectItem value="Intensive Care Unit (ICU)">ICU (Floor 3)</SelectItem>
+                  <SelectItem value="Maternity Ward">Maternity Ward</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Clinical Indication / Admission Instructions</Label>
+              <Textarea
+                className="mt-1"
+                rows={3}
+                placeholder="e.g. Admit for IV antibiotic therapy, vital sign monitoring every 4 hours, and bed rest."
+                value={bedRequestForm.notes}
+                onChange={e => setBedRequestForm(f => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+
+            <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800 rounded-lg p-3 text-xs text-indigo-800 dark:text-indigo-300">
+              <p className="font-semibold mb-0.5">Workflow Gate:</p>
+              <p>
+                An admission billing invoice (500 ETB) will be created at Reception/Billing. Once verified, Reception assigns an available room & bed.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBedModalOpen(false)} disabled={actionLoading}>
+              Cancel
+            </Button>
+            <Button onClick={handleRequestBedAdmission} disabled={actionLoading} className="gap-2">
+              <Building2 className="w-4 h-4" />
+              {actionLoading ? 'Submitting...' : 'Confirm Bed Admission'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

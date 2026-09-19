@@ -392,8 +392,8 @@ export default function PortalLayout({ role }) {
 
         {/* Primary Portal Content Container */}
         <div className="portal-content flex-1 flex flex-col min-w-0">
-          {/* Main page content */}
-          <main className="flex-1 flex flex-col p-3.5 sm:p-4 md:p-6 lg:p-8 min-w-0">
+          {/* Main page content with mobile floating nav clearance */}
+          <main className="flex-1 flex flex-col p-3.5 sm:p-4 md:p-6 lg:p-8 pb-24 sm:pb-8 md:pb-6 min-w-0">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

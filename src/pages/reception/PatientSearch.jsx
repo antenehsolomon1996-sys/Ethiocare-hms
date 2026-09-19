@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { buildDoctorList } from '@/lib/doctorUtils';
 import { notificationService } from '@/services/notification.service';
 import { patientFeeService } from '@/services/patientFee.service';
+import { calculateDoctorAvailability } from '@/services/staffAvailability.service';
 
 export default function PatientSearch() {
   const navigate = useNavigate();
@@ -67,6 +68,16 @@ export default function PatientSearch() {
   });
 
   const allDoctors = useMemo(() => buildDoctorList(doctors, staff), [doctors, staff]);
+
+  const doctorsWithAvailability = useMemo(() => {
+    return allDoctors.map(doc => {
+      const avail = calculateDoctorAvailability(doc, visits);
+      return {
+        ...doc,
+        availability: avail
+      };
+    });
+  }, [allDoctors, visits]);
 
   // Determine 30-day treatment rule fee assessment across BOTH system visits and historical records
   const feeAssessment = useMemo(() => {
@@ -183,6 +194,19 @@ export default function PatientSearch() {
         targetRoles: ['accountant', 'receptionist', 'owner'],
         link: '/reception/billing'
       });
+
+      if (selectedDoctor?.id || selectedDoctor?.full_name) {
+        notificationService.dispatch({
+          title: 'Patient Assigned to Your Queue',
+          message: `${selected.full_name} (${selected.patient_id || 'ID'}) has been assigned to your consultation queue (#${queueNum}).`,
+          type: 'info',
+          module: 'queue',
+          targetRoles: ['doctor'],
+          targetUserId: selectedDoctor.id,
+          targetStaffName: selectedDoctor.full_name,
+          link: '/doctor/queue'
+        });
+      }
 
       setQueueOpen(false);
       setSelectedDoctor(null);
@@ -555,18 +579,38 @@ export default function PatientSearch() {
             </p>
 
             <div>
-              <Label className="text-xs">Assign Doctor (optional)</Label>
+              <div className="flex items-center justify-between mb-1.5">
+                <Label className="text-xs font-semibold">Assign Doctor</Label>
+                <span className="text-[11px] text-muted-foreground">Live Shift Availability</span>
+              </div>
               <Select
                 value={selectedDoctor?.full_name || ''}
-                onValueChange={name => setSelectedDoctor(allDoctors.find(d => d.full_name === name) || null)}
+                onValueChange={name => setSelectedDoctor(doctorsWithAvailability.find(d => d.full_name === name) || null)}
               >
-                <SelectTrigger className="h-10 text-sm">
-                  <SelectValue placeholder="Any available doctor" />
+                <SelectTrigger className="h-11 text-sm">
+                  <SelectValue placeholder="Select doctor..." />
                 </SelectTrigger>
-                <SelectContent>
-                  {allDoctors.map(d => (
-                    <SelectItem key={d.full_name} value={d.full_name}>
-                      {d.full_name} {d.specialty ? `(${d.specialty})` : ''}
+                <SelectContent className="max-h-72">
+                  {doctorsWithAvailability.map(d => (
+                    <SelectItem key={d.full_name} value={d.full_name} className="py-2">
+                      <div className="flex items-center justify-between gap-3 w-full">
+                        <div className="flex flex-col text-left">
+                          <span className="font-semibold text-foreground text-xs leading-none">
+                            {d.full_name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                            {d.specialty || 'General Practice'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${d.availability?.badgeClass || 'bg-slate-100 text-slate-700'}`}>
+                            {d.availability?.statusLabel}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded">
+                            {d.availability?.totalWorkload} in queue
+                          </span>
+                        </div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

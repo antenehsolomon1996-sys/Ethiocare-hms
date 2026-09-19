@@ -28,6 +28,9 @@ export const TABLE_MAP: Record<string, string> = {
   OtherIncome: 'other_incomes',
   EmployeeSalary: 'employee_salaries',
   SalaryPayment: 'salary_payments',
+  Room: 'rooms',
+  Bed: 'beds',
+  BedAssignment: 'bed_assignments',
 };
 
 // Default seed data for development/offline fallback
@@ -87,7 +90,29 @@ const INITIAL_SEED: Record<string, any[]> = {
     { id: 'sal-6', staff_id: 'stf-7', employee_name: 'Bethelhem Solomon', role: 'pharmacist', department: 'Pharmacy', base_salary: 18000, payday_of_month: 28, payment_frequency: 'monthly', payment_method: 'bank_transfer', bank_name: 'Dashen Bank', bank_account: '512039485761', status: 'active', created_at: new Date().toISOString() },
     { id: 'sal-7', staff_id: 'stf-8', employee_name: 'Mulugeta Kebede', role: 'accountant', department: 'Billing', base_salary: 16500, payday_of_month: 28, payment_frequency: 'monthly', payment_method: 'bank_transfer', bank_name: 'Commercial Bank of Ethiopia', bank_account: '1000554433221', status: 'active', created_at: new Date().toISOString() }
   ],
-  SalaryPayment: []
+  SalaryPayment: [],
+  Room: [
+    { id: 'rm-101', room_number: '101', room_type: 'general_ward', department: 'General Inpatient', floor: '1st Floor', daily_rate: 350, status: 'available', created_at: new Date().toISOString() },
+    { id: 'rm-102', room_number: '102', room_type: 'pediatric', department: 'Pediatrics', floor: '1st Floor', daily_rate: 400, status: 'available', created_at: new Date().toISOString() },
+    { id: 'rm-201', room_number: '201', room_type: 'semi_private', department: 'Inpatient Ward', floor: '2nd Floor', daily_rate: 600, status: 'available', created_at: new Date().toISOString() },
+    { id: 'rm-204', room_number: '204', room_type: 'standard', department: 'Inpatient Ward', floor: '2nd Floor', daily_rate: 500, status: 'available', created_at: new Date().toISOString() },
+    { id: 'rm-301', room_number: '301', room_type: 'icu', department: 'Intensive Care Unit (ICU)', floor: '3rd Floor', daily_rate: 1200, status: 'available', created_at: new Date().toISOString() }
+  ],
+  Bed: [
+    { id: 'bed-101-1', room_id: 'rm-101', bed_number: 'B-01', bed_label: 'Room 101 - Bed B-01', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-101-2', room_id: 'rm-101', bed_number: 'B-02', bed_label: 'Room 101 - Bed B-02', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-101-3', room_id: 'rm-101', bed_number: 'B-03', bed_label: 'Room 101 - Bed B-03', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-101-4', room_id: 'rm-101', bed_number: 'B-04', bed_label: 'Room 101 - Bed B-04', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-102-1', room_id: 'rm-102', bed_number: 'B-01', bed_label: 'Room 102 - Bed B-01', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-102-2', room_id: 'rm-102', bed_number: 'B-02', bed_label: 'Room 102 - Bed B-02', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-201-1', room_id: 'rm-201', bed_number: 'B-01', bed_label: 'Room 201 - Bed B-01', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-201-2', room_id: 'rm-201', bed_number: 'B-02', bed_label: 'Room 201 - Bed B-02', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-204-1', room_id: 'rm-204', bed_number: 'B-01', bed_label: 'Room 204 - Bed B-01', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-204-2', room_id: 'rm-204', bed_number: 'B-02', bed_label: 'Room 204 - Bed B-02', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-301-1', room_id: 'rm-301', bed_number: 'B-01', bed_label: 'Room 301 - Bed B-01', status: 'available', created_at: new Date().toISOString() },
+    { id: 'bed-301-2', room_id: 'rm-301', bed_number: 'B-02', bed_label: 'Room 301 - Bed B-02', status: 'available', created_at: new Date().toISOString() }
+  ],
+  BedAssignment: []
 };
 
 // Normalize a record so both created_at and created_date are available

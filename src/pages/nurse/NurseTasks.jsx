@@ -13,15 +13,44 @@ import { useAuth } from '@/lib/AuthContext';
 
 export default function NurseTasks() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState(null);
   const [notes, setNotes] = useState('');
-  const queryClient = useQueryClient();
+  const [scope, setScope] = useState('my');
 
   const { data: tasks = [], isLoading } = useQuery({ 
     queryKey: ['nurseTasks'], 
     queryFn: () => ethioCareClient.entities.NurseTask.list('-created_date', 100),
     refetchInterval: 10000
   });
+
+  const { data: visits = [] } = useQuery({
+    queryKey: ['visits'],
+    queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 100),
+    refetchInterval: 15000
+  });
+
+  const getBedInfo = (patientId, visitId) => {
+    const v = (visitId && visits.find(vis => vis.id === visitId)) ||
+              (patientId && visits.find(vis => vis.patient_id === patientId && (vis.bed_assigned || vis.room_number)));
+    if (v && v.room_number && v.bed_number) return `Room ${v.room_number} → Bed ${v.bed_number}`;
+    if (v && v.room_number) return `Room ${v.room_number}`;
+    return null;
+  };
+
+  const isAssignedToMe = (t) => {
+    if (!user) return true;
+    const myId = String(user.id || '').trim();
+    const myName = String(user.full_name || '').toLowerCase().trim();
+    const assignedId = String(t.assigned_nurse_id || '').trim();
+    const assignedName = String(t.assigned_nurse_name || '').toLowerCase().trim();
+    if (!assignedId && !assignedName) return true;
+    if (assignedId && myId && assignedId === myId) return true;
+    if (assignedName && myName && (assignedName.includes(myName) || myName.includes(assignedName))) return true;
+    return false;
+  };
+
+  const displayedTasks = scope === 'my' ? tasks.filter(isAssignedToMe) : tasks;
 
   const handleStart = async (task) => {
     queryClient.setQueryData(['nurseTasks'], (old) => old.map(t => t.id === task.id ? { ...t, status: 'in_progress' } : t));
@@ -60,10 +89,35 @@ export default function NurseTasks() {
   };
 
   const columns = [
-    { header: 'Patient', accessor: 'patient_name' },
+    { 
+      header: 'Patient & Bed', 
+      cell: (r) => {
+        const bedInfo = getBedInfo(r.patient_id, r.visit_id);
+        return (
+          <div>
+            <p className="font-semibold text-sm">{r.patient_name}</p>
+            {bedInfo ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800 mt-0.5">
+                🏨 {bedInfo}
+              </span>
+            ) : (
+              <span className="text-[11px] text-muted-foreground">Outpatient / OPD</span>
+            )}
+          </div>
+        );
+      }
+    },
     { header: 'Task', cell: (r) => <span className="capitalize">{r.task_type?.replace('_', ' ')}</span> },
     { header: 'Description', accessor: 'description' },
     { header: 'Doctor', accessor: 'doctor_name' },
+    { 
+      header: 'Assigned Nurse', 
+      cell: (r) => (
+        <span className="text-xs">
+          {r.assigned_nurse_name || <span className="text-muted-foreground italic">Unassigned (Ward)</span>}
+        </span>
+      )
+    },
     { header: 'Status', cell: (r) => <StatusBadge status={r.status} /> },
     { header: 'Action', cell: (r) => {
       if (r.status === 'pending') return <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleStart(r); }}>Start</Button>;
@@ -74,8 +128,31 @@ export default function NurseTasks() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Nurse Tasks</h1>
-      <DataTable columns={columns} data={tasks} isLoading={isLoading} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Nurse Tasks</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Logged in as: <strong>{user?.full_name || 'Staff Nurse'}</strong></p>
+        </div>
+        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border shrink-0 self-start sm:self-auto">
+          <Button
+            size="sm"
+            variant={scope === 'my' ? 'default' : 'ghost'}
+            className="h-8 text-xs font-medium rounded-lg px-3"
+            onClick={() => setScope('my')}
+          >
+            Assigned to Me
+          </Button>
+          <Button
+            size="sm"
+            variant={scope === 'all' ? 'default' : 'ghost'}
+            className="h-8 text-xs font-medium rounded-lg px-3"
+            onClick={() => setScope('all')}
+          >
+            All Ward Tasks
+          </Button>
+        </div>
+      </div>
+      <DataTable columns={columns} data={displayedTasks} isLoading={isLoading} />
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent>

@@ -14,6 +14,7 @@ import { buildDoctorList } from '@/lib/doctorUtils';
 import { notificationService } from '@/services/notification.service';
 import { patientFeeService } from '@/services/patientFee.service';
 import AddHistoricalRecordModal from '@/components/reception/AddHistoricalRecordModal';
+import { calculateDoctorAvailability } from '@/services/staffAvailability.service';
 
 export default function RegisterPatient() {
   const queryClient = useQueryClient();
@@ -70,6 +71,16 @@ export default function RegisterPatient() {
   const [historicalModalOpen, setHistoricalModalOpen] = useState(false);
 
   const doctors = useMemo(() => buildDoctorList(doctorEntities, staff), [doctorEntities, staff]);
+
+  const doctorsWithAvailability = useMemo(() => {
+    return doctors.map(doc => {
+      const avail = calculateDoctorAvailability(doc, visits);
+      return {
+        ...doc,
+        availability: avail
+      };
+    });
+  }, [doctors, visits]);
 
   // Centralized active registration tariffs
   const regServices = useMemo(() => {
@@ -279,6 +290,19 @@ export default function RegisterPatient() {
         link: '/reception/billing'
       });
 
+      if (selectedDoctor?.id || selectedDoctor?.full_name) {
+        notificationService.dispatch({
+          title: 'Patient Assigned to Your Queue',
+          message: `${created.full_name} (${created.patient_id || 'ID Pending'}) has been assigned to your consultation queue (#${queueNum}).`,
+          type: 'info',
+          module: 'queue',
+          targetRoles: ['doctor'],
+          targetUserId: selectedDoctor.id,
+          targetStaffName: selectedDoctor.full_name,
+          link: '/doctor/queue'
+        });
+      }
+
       // Reset form state cleanly
       setCreated(null);
       setSendToDoctor(false);
@@ -427,24 +451,44 @@ export default function RegisterPatient() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="doctor-select">Select Attending Doctor</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="doctor-select">Select Attending Doctor</Label>
+                <span className="text-[11px] text-muted-foreground">Live Availability</span>
+              </div>
               <Select
                 value={selectedDoctor?.full_name || undefined}
                 onValueChange={name => {
-                  const doc = doctors.find(d => d.full_name === name);
+                  const doc = doctorsWithAvailability.find(d => d.full_name === name);
                   setSelectedDoctor(doc || null);
                 }}
               >
                 <SelectTrigger id="doctor-select" className="h-11 bg-card">
                   <SelectValue placeholder="Choose a doctor..." />
                 </SelectTrigger>
-                <SelectContent>
-                  {doctors.map(d => (
-                    <SelectItem key={d.full_name} value={d.full_name}>
-                      {d.full_name} {d.specialty ? `— (${d.specialty})` : ''}
+                <SelectContent className="max-h-72">
+                  {doctorsWithAvailability.map(d => (
+                    <SelectItem key={d.full_name} value={d.full_name} className="py-2">
+                      <div className="flex items-center justify-between gap-3 w-full">
+                        <div className="flex flex-col text-left">
+                          <span className="font-semibold text-foreground text-xs leading-none">
+                            {d.full_name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                            {d.specialty || 'General Practice'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${d.availability?.badgeClass || 'bg-slate-100 text-slate-700'}`}>
+                            {d.availability?.statusLabel}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded">
+                            {d.availability?.totalWorkload} in queue
+                          </span>
+                        </div>
+                      </div>
                     </SelectItem>
                   ))}
-                  {doctors.length === 0 && (
+                  {doctorsWithAvailability.length === 0 && (
                     <SelectItem value="__none" disabled>
                       No active doctors available
                     </SelectItem>

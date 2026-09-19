@@ -14,6 +14,10 @@ import { toast } from 'sonner';
 import { logAudit } from '@/lib/auditLogger';
 import { useQuery } from '@tanstack/react-query';
 
+import { calculateNurseAvailability } from '@/services/staffAvailability.service';
+import { notificationService } from '@/services/notification.service';
+import { useMemo } from 'react';
+
 const ORDER_TYPE_ICONS = { medicine: Pill, injection: Syringe, iv_treatment: Syringe, medical_supply: Package, other: Package };
 const URGENCY_STYLES = {
   stat: 'bg-red-100 text-red-700 border-red-200',
@@ -31,6 +35,8 @@ const defaultForm = {
   unit_price: '',
   instructions: '',
   urgency: 'routine',
+  assigned_nurse_id: '',
+  assigned_nurse_name: '',
   notes: ''
 };
 
@@ -85,6 +91,32 @@ export default function MedicationOrderForm({ visit, doctor, existingOrders = []
     queryFn: () => ethioCareClient.entities.Medicine.list()
   });
 
+  // Fetch staff and tasks to compute live nurse availability & workload
+  const { data: staffList = [] } = useQuery({
+    queryKey: ['staff'],
+    queryFn: () => ethioCareClient.entities.Staff.list()
+  });
+  const { data: allNurseTasks = [] } = useQuery({
+    queryKey: ['nurseTasks'],
+    queryFn: () => ethioCareClient.entities.NurseTask.list()
+  });
+  const { data: allMedOrders = [] } = useQuery({
+    queryKey: ['medicationOrders'],
+    queryFn: () => ethioCareClient.entities.MedicationOrder.list()
+  });
+
+  const nursesWithAvailability = useMemo(() => {
+    const rawNurses = staffList.filter(s => s.role === 'nurse');
+    const base = rawNurses.length > 0 ? rawNurses : [
+      { id: 'stf-4', full_name: 'Sister Tigist Mengistu', role: 'nurse' },
+      { id: 'stf-nurse-2', full_name: 'Nurse Hana Bekele', role: 'nurse' }
+    ];
+    return base.map(n => ({
+      ...n,
+      availability: calculateNurseAvailability(n, allNurseTasks, allMedOrders)
+    }));
+  }, [staffList, allNurseTasks, allMedOrders]);
+
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   const handleItemNameChange = (name) => {
@@ -113,6 +145,8 @@ export default function MedicationOrderForm({ visit, doctor, existingOrders = []
         patient_name: visit.patient_name,
         doctor_name: doctor?.full_name || null,
         doctor_id: doctor?.id || null,
+        assigned_nurse_id: form.assigned_nurse_id || null,
+        assigned_nurse_name: form.assigned_nurse_name || null,
         order_type: form.order_type,
         item_name: form.item_name,
         dosage: form.dosage,
@@ -152,12 +186,25 @@ export default function MedicationOrderForm({ visit, doctor, existingOrders = []
         order_status: 'pending_payment'
       });
 
+      if (form.assigned_nurse_id || form.assigned_nurse_name) {
+        notificationService.dispatch({
+          title: 'New Nurse Task Assigned',
+          message: `${form.order_type.replace('_', ' ')}: ${form.item_name} for ${visit.patient_name} assigned to you by Dr. ${doctor?.full_name || 'Attending Doctor'}.`,
+          type: 'info',
+          module: 'nurse',
+          targetRoles: ['nurse'],
+          targetUserId: form.assigned_nurse_id,
+          targetStaffName: form.assigned_nurse_name,
+          link: '/nurse/medication-orders'
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: ['medicationOrders'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       logAudit({
         userName: doctor?.full_name, userRole: 'doctor', action: 'create',
         module: 'MedicationOrder',
-        description: `Ordered ${form.order_type.replace('_', ' ')}: ${form.item_name} for ${visit.patient_name}`,
+        description: `Ordered ${form.order_type.replace('_', ' ')}: ${form.item_name} for ${visit.patient_name}${form.assigned_nurse_name ? ` (assigned to ${form.assigned_nurse_name})` : ''}`,
         recordId: order.id, recordName: visit.patient_name
       });
       toast.success('Order sent to Billing for payment processing');
@@ -233,6 +280,50 @@ export default function MedicationOrderForm({ visit, doctor, existingOrders = []
                 <option key={m.id} value={m.name}>{m.unit_price ? `${m.unit_price} ETB` : ''}</option>
               ))}
             </datalist>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <Label className="text-xs font-semibold">Assign Specific Nurse</Label>
+              <span className="text-[11px] text-muted-foreground">Live Shift Availability</span>
+            </div>
+            <Select
+              value={form.assigned_nurse_name || '__any'}
+              onValueChange={val => {
+                if (val === '__any') {
+                  setForm(f => ({ ...f, assigned_nurse_id: '', assigned_nurse_name: '' }));
+                } else {
+                  const nurse = nursesWithAvailability.find(n => n.full_name === val);
+                  setForm(f => ({
+                    ...f,
+                    assigned_nurse_id: nurse?.id || '',
+                    assigned_nurse_name: nurse?.full_name || val
+                  }));
+                }
+              }}
+            >
+              <SelectTrigger className="h-10 text-sm">
+                <SelectValue placeholder="Any Available Nurse (Ward Pool)" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="__any">Any Available Nurse (Ward Duty Pool)</SelectItem>
+                {nursesWithAvailability.map(n => (
+                  <SelectItem key={n.id || n.full_name} value={n.full_name}>
+                    <div className="flex items-center justify-between gap-3 w-full py-0.5">
+                      <span className="font-medium text-foreground">{n.full_name}</span>
+                      <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${n.availability?.badgeClass || 'bg-slate-100 text-slate-700'}`}>
+                          {n.availability?.statusLabel}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded">
+                          {n.availability?.totalWorkload} active
+                        </span>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

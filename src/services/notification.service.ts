@@ -5,6 +5,8 @@ export interface NotificationItem {
   type: 'info' | 'success' | 'warning' | 'error' | 'alert';
   module: 'patient' | 'queue' | 'lab' | 'pharmacy' | 'nurse' | 'billing' | 'owner';
   targetRoles: string[]; // e.g. ['doctor', 'nurse'], ['all'], ['pharmacist']
+  targetUserId?: string;
+  targetStaffName?: string;
   readBy: string[]; // user IDs or role names who read it
   createdAt: string;
   link?: string;
@@ -66,18 +68,30 @@ if (channel) {
 }
 
 export const notificationService = {
-  getNotifications(role?: string): NotificationItem[] {
+  getNotifications(role?: string, staffIdentifier?: string): NotificationItem[] {
     const all = getStoredNotifications();
     if (!role || role === 'owner' || role === 'admin') return all;
-    return all.filter(n =>
-      n.targetRoles.includes('all') ||
-      n.targetRoles.includes(role)
-    );
+    return all.filter(n => {
+      const roleMatches = n.targetRoles.includes('all') || n.targetRoles.includes(role);
+      if (!roleMatches) return false;
+      // If notification has a specific target staff, only show to them or unassigned
+      if (n.targetUserId || n.targetStaffName) {
+        if (!staffIdentifier) return true;
+        const idMatches = n.targetUserId && n.targetUserId === staffIdentifier;
+        const nameMatches = n.targetStaffName && (
+          n.targetStaffName.toLowerCase().includes(staffIdentifier.toLowerCase()) ||
+          staffIdentifier.toLowerCase().includes(n.targetStaffName.toLowerCase())
+        );
+        return idMatches || nameMatches;
+      }
+      return true;
+    });
   },
 
-  getUnreadCount(role?: string): number {
-    const notifs = this.getNotifications(role);
-    return notifs.filter(n => !n.readBy.includes(role || 'default')).length;
+  getUnreadCount(role?: string, staffIdentifier?: string): number {
+    const notifs = this.getNotifications(role, staffIdentifier);
+    const identifier = staffIdentifier || role || 'default';
+    return notifs.filter(n => !n.readBy.includes(identifier) && !n.readBy.includes(role || 'default')).length;
   },
 
   dispatch(item: Omit<NotificationItem, 'id' | 'createdAt' | 'readBy'> & { readBy?: string[] }) {

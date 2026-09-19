@@ -40,6 +40,7 @@ const Reports = lazy(() => import('@/pages/owner/Reports'));
 const AuditLogs = lazy(() => import('@/pages/owner/AuditLogs'));
 const OwnerSettings = lazy(() => import('@/pages/owner/OwnerSettings'));
 const DoctorPortals = lazy(() => import('@/pages/owner/DoctorPortals'));
+const RoomBedManagement = lazy(() => import('@/pages/owner/RoomBedManagement'));
 
 // Reception pages
 const ReceptionDashboard = lazy(() => import('@/pages/reception/ReceptionDashboard'));
@@ -47,6 +48,7 @@ const RegisterPatient = lazy(() => import('@/pages/reception/RegisterPatient'));
 const QueueView = lazy(() => import('@/pages/reception/QueueView'));
 const PatientSearch = lazy(() => import('@/pages/reception/PatientSearch'));
 const ReceptionBilling = lazy(() => import('@/pages/reception/ReceptionBilling'));
+const BedManagement = lazy(() => import('@/pages/reception/BedManagement'));
 
 // Doctor pages
 const DoctorDashboard = lazy(() => import('@/pages/doctor/DoctorDashboard'));
@@ -150,6 +152,8 @@ const AuthenticatedApp = () => {
             <Route path="/admin/lab-tests" element={<LabTestsManagement />} />
             <Route path="/admin/fees" element={<FeeManagement />} />
             <Route path="/admin/doctor-portals" element={<DoctorPortals />} />
+            <Route path="/admin/beds" element={<RoomBedManagement />} />
+            <Route path="/admin/rooms" element={<RoomBedManagement />} />
             <Route path="/admin/reports" element={<Reports />} />
             <Route path="/admin/audit-logs" element={<AuditLogs />} />
             <Route path="/admin/settings" element={<OwnerSettings />} />
@@ -168,6 +172,8 @@ const AuthenticatedApp = () => {
             <Route path="/owner/fees" element={<FeeManagement />} />
             <Route path="/owner/fee-management" element={<FeeManagement />} />
             <Route path="/owner/doctor-portals" element={<DoctorPortals />} />
+            <Route path="/owner/beds" element={<RoomBedManagement />} />
+            <Route path="/owner/rooms" element={<RoomBedManagement />} />
             <Route path="/owner/reports" element={<Reports />} />
             <Route path="/owner/audit-logs" element={<AuditLogs />} />
             <Route path="/owner/settings" element={<OwnerSettings />} />
@@ -179,6 +185,7 @@ const AuthenticatedApp = () => {
             <Route path="/reception/register" element={<RegisterPatient />} />
             <Route path="/reception/search" element={<PatientSearch />} />
             <Route path="/reception/queue" element={<QueueView />} />
+            <Route path="/reception/beds" element={<BedManagement />} />
             <Route path="/reception/billing" element={<ReceptionBilling />} />
             <Route path="/reception/billing/medication-orders" element={<MedicationOrdersBilling />} />
             <Route path="/reception/billing/payments" element={<PaymentsList />} />
