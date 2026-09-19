@@ -1,4 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import Sidebar from './Sidebar';
 import MobileFloatingNav from './MobileFloatingNav';
 import ThemeToggle from './ThemeToggle';
