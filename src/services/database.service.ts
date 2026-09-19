@@ -499,7 +499,7 @@ export class EntityService {
       throw formatSupabaseError(error, 'update', this.tableName);
     }
     if (!updated) {
-      throw new Error(`Supabase update failed on ${this.tableName}: row not found or update restricted by row-level security policy.`);
+      throw new Error(`Supabase update failed on ${this.tableName} (id: ${id}): row not found or update restricted by row-level security policy.`);
     }
     return normalizeRow(updated);
   }

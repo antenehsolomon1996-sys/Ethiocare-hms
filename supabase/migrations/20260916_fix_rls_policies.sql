@@ -333,8 +333,8 @@ WITH CHECK (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse')
 
 CREATE POLICY "visits_update_policy"
 ON public.visits FOR UPDATE TO authenticated
-USING (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse', 'accountant'))
-WITH CHECK (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse', 'accountant'));
+USING (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse', 'lab_technician', 'accountant'))
+WITH CHECK (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse', 'lab_technician', 'accountant'));
 
 CREATE POLICY "visits_delete_policy"
 ON public.visits FOR DELETE TO authenticated

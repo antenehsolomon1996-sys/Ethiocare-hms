@@ -70,6 +70,7 @@ export default function PullToRefresh({ onRefresh, children }) {
   return (
     <div
       ref={containerRef}
+      className="flex flex-col min-h-full w-full"
       style={{
         transform: `translateY(${pullDistance}px)`,
         transition: pullingRef.current ? 'none' : 'transform 0.2s ease',

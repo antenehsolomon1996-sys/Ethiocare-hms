@@ -130,7 +130,7 @@ export default function PortalLayout({ role }) {
   if (!user) {
     if (isLoadingAuth) {
       return (
-        <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex h-screen h-dvh items-center justify-center bg-background">
           <div className="text-center">
             <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
             <p className="text-sm text-muted-foreground">Loading portal...</p>
@@ -178,7 +178,7 @@ export default function PortalLayout({ role }) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background relative">
+    <div className="flex h-screen h-dvh overflow-hidden bg-background relative">
       {/* Moving Ambient Healthcare Background */}
       <HealthcareBackground />
 
@@ -198,14 +198,14 @@ export default function PortalLayout({ role }) {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden relative z-10">
         {/* Top bar */}
         <header
-          className="glass border-b border-border/60 flex items-center justify-between px-3 md:px-5 flex-shrink-0 transition-all z-20"
-          style={{ paddingTop: 'env(safe-area-inset-top)', height: 'calc(3.75rem + env(safe-area-inset-top))' }}
+          className="glass border-b border-border/60 flex items-center justify-between px-3 md:px-5 flex-shrink-0 transition-all z-30 sticky top-0"
+          style={{ paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(3.75rem + env(safe-area-inset-top, 0px))' }}
         >
           <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-            <Button variant="ghost" size="icon" className="md:hidden shrink-0" onClick={() => setMobileOpen(true)}>
+            <Button variant="ghost" size="icon" className="md:hidden shrink-0 min-h-[44px] min-w-[44px]" onClick={() => setMobileOpen(true)} aria-label="Open portal navigation menu">
               <Menu className="w-5 h-5" />
             </Button>
 
@@ -213,7 +213,7 @@ export default function PortalLayout({ role }) {
             <div className="flex items-center gap-2 min-w-0">
               <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
                 {brandLogo ? (
-                  <img src={brandLogo} alt={brandName} className="w-full h-full object-contain p-0.5" />
+                  <img src={brandLogo} alt={brandName} className="w-full h-full object-contain p-0.5" loading="lazy" decoding="async" />
                 ) : isPharmacy ? (
                   <Pill className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
@@ -358,7 +358,7 @@ export default function PortalLayout({ role }) {
         </header>
 
         {/* Contextual Mobile Portal Sub-Header (Section 8: Authentic Data Strip) */}
-        <div className="md:hidden border-b border-border/60 bg-card/75 backdrop-blur-md px-3.5 py-2 flex items-center justify-between z-10 shadow-2xs">
+        <div className="md:hidden border-b border-border/60 bg-card/90 backdrop-blur-md px-3.5 py-2 flex items-center justify-between z-20 shadow-2xs shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold font-heading text-foreground tracking-tight">
@@ -391,21 +391,30 @@ export default function PortalLayout({ role }) {
         </div>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto overscroll-y-none p-4 md:p-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-6">
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scroll-smooth overscroll-y-none p-3.5 sm:p-4 md:p-6 lg:p-8 md:pb-8 lg:pb-12">
           <PullToRefresh onRefresh={handleRefresh}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ErrorBoundary title="Portal View Error">
-                  <Outlet />
-                </ErrorBoundary>
-              </motion.div>
-            </AnimatePresence>
+            <div className="flex flex-col min-h-full">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={location.pathname}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex-1 flex flex-col"
+                >
+                  <ErrorBoundary title="Portal View Error">
+                    <Outlet />
+                  </ErrorBoundary>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Real Layout Bottom Spacer for Fixed Mobile Navigation */}
+              <div
+                aria-hidden="true"
+                className="mobile-bottom-nav-spacer md:hidden"
+              />
+            </div>
           </PullToRefresh>
         </main>
       </div>

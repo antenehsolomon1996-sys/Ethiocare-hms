@@ -39,5 +39,5 @@ WITH CHECK (public.is_staff('owner', 'admin', 'accountant', 'receptionist'));
 DROP POLICY IF EXISTS "visits_update_policy" ON public.visits;
 CREATE POLICY "visits_update_policy"
 ON public.visits FOR UPDATE TO authenticated
-USING (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse', 'accountant'))
-WITH CHECK (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse', 'accountant'));
+USING (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse', 'lab_technician', 'accountant'))
+WITH CHECK (public.is_staff('owner', 'admin', 'receptionist', 'doctor', 'nurse', 'lab_technician', 'accountant'));

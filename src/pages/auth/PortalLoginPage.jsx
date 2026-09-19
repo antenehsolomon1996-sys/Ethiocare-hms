@@ -22,6 +22,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import HealthcareBackground from '@/components/layout/HealthcareBackground';
+import AuthBrandedFooter from '@/components/auth/AuthBrandedFooter';
 import { useHospitalBranding } from '@/hooks/useHospitalBranding';
 import { usePharmacyBranding } from '@/hooks/usePharmacyBranding';
 
@@ -200,18 +201,24 @@ export default function PortalLoginPage({ portalKey = 'admin', onLoginSuccess })
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 py-8 pb-[calc(3rem+env(safe-area-inset-bottom,0px))] bg-background relative overflow-x-hidden scroll-smooth overscroll-y-none">
       <HealthcareBackground />
 
-      <div className="w-full max-w-md relative z-10 animate-in fade-in-50 zoom-in-95 duration-200">
+      <div className="w-full max-w-lg relative z-10 animate-in fade-in-50 zoom-in-95 duration-200 my-auto">
         {/* Portal Luxury Header Card */}
-        <div className="bg-card/90 backdrop-blur-md border border-border rounded-2xl shadow-xl p-8 space-y-6">
+        <div className="bg-card/90 backdrop-blur-md border border-border rounded-2xl shadow-xl p-6 sm:p-8 space-y-6">
           <div className="text-center space-y-3">
             {/* Branding Logo or Portal Icon */}
             <div className="flex items-center justify-center">
               {brandLogo ? (
                 <div className="w-16 h-16 rounded-2xl overflow-hidden border border-border shadow-md bg-white flex items-center justify-center p-1.5">
-                  <img src={brandLogo} alt={brandName} className="w-full h-full object-contain" />
+                  <img
+                    src={brandLogo}
+                    alt={brandName}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               ) : (
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${meta.color} text-white flex items-center justify-center shadow-lg`}>
@@ -271,7 +278,7 @@ export default function PortalLoginPage({ portalKey = 'admin', onLoginSuccess })
                 <Label htmlFor="portal-password" className="text-xs font-semibold text-foreground">
                   Password or Staff Code
                 </Label>
-                <Link to="/forgot-password" className="text-[11px] text-primary hover:underline font-medium">
+                <Link to="/forgot-password" className="text-[11px] text-primary hover:underline font-medium min-h-[24px] inline-flex items-center">
                   Forgot password?
                 </Link>
               </div>
@@ -284,10 +291,13 @@ export default function PortalLoginPage({ portalKey = 'admin', onLoginSuccess })
                   placeholder="•••••••• or HMS-XXXX-XXXX"
                   value={credential}
                   onChange={(e) => setCredential(e.target.value)}
-                  className="pl-10 h-11 bg-background"
+                  className="pl-10 h-11 bg-background font-mono text-sm"
                   required
                 />
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Enter your account password or unique staff badge code (e.g. HMS-ADMN-2026).
+              </p>
             </div>
 
             <Button
@@ -312,17 +322,17 @@ export default function PortalLoginPage({ portalKey = 'admin', onLoginSuccess })
               <button
                 type="button"
                 onClick={handleFillDemo}
-                className="w-full py-1.5 px-3 rounded-lg border border-dashed border-border text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5"
+                className="w-full min-h-[44px] py-2 px-3 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors flex items-center justify-center gap-1.5"
               >
-                <Sparkles className="w-3 h-3 text-primary" />
-                Fill {meta.quickRole} Credentials ({meta.quickEmail})
+                <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span>Fill {meta.quickRole} Credentials ({meta.quickEmail})</span>
               </button>
             </div>
           )}
 
           <div className="text-center pt-2 text-xs text-muted-foreground">
             First time logging in?{' '}
-            <Link to="/activate-account" className="text-primary font-semibold hover:underline inline-flex items-center gap-1">
+            <Link to="/activate-account" className="text-primary font-semibold hover:underline inline-flex items-center gap-1 min-h-[24px]">
               <ShieldCheck className="w-3.5 h-3.5" /> Activate account
             </Link>
           </div>
@@ -330,10 +340,13 @@ export default function PortalLoginPage({ portalKey = 'admin', onLoginSuccess })
 
         {/* Global Navigation Link to Other Portals */}
         <div className="text-center mt-4">
-          <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+          <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground hover:underline inline-flex items-center min-h-[36px] px-3 py-1">
             ← Switch to General Hospital Staff Login
           </Link>
         </div>
+
+        {/* Comprehensive Hospital / Pharmacy Contact Footer */}
+        <AuthBrandedFooter isPharmacy={isPharmacy} />
       </div>
     </div>
   );

@@ -28,6 +28,7 @@ import {
   Receipt
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ImageUploadField from '@/components/common/ImageUploadField';
 
 export default function PharmacySettingsPage() {
   const { user } = useAuth();
@@ -271,18 +272,15 @@ export default function PharmacySettingsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="pharmacy_logo" className="text-xs font-semibold">
-                    Pharmacy Logo (URL or Base64)
-                  </Label>
-                  <Input
-                    id="pharmacy_logo"
-                    value={brandingForm.pharmacy_logo}
-                    onChange={(e) => setBrandingForm(prev => ({ ...prev, pharmacy_logo: e.target.value }))}
-                    placeholder="https://example.com/pharmacy-logo.png"
-                    className="font-mono text-xs"
-                  />
-                </div>
+                <ImageUploadField
+                  id="pharmacy_logo"
+                  label="Pharmacy Logo"
+                  value={brandingForm.pharmacy_logo}
+                  onChange={(val) => setBrandingForm(prev => ({ ...prev, pharmacy_logo: val }))}
+                  placeholder="https://example.com/pharmacy-logo.png"
+                  description="Upload file or enter URL. Client-side canvas auto-optimizes to max 512px WebP/PNG for rapid POS and navbar loading."
+                  maxDimension={512}
+                />
               </CardContent>
             </Card>
 

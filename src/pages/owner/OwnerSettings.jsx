@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { logAudit } from '@/lib/auditLogger';
 import { toast } from 'sonner';
+import ImageUploadField from '@/components/common/ImageUploadField';
 
 export default function OwnerSettings() {
   const { user } = useAuth();
@@ -331,32 +332,15 @@ export default function OwnerSettings() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="hospital_logo" className="text-xs font-semibold flex items-center justify-between">
-                    <span>Hospital Logo (URL or Base64)</span>
-                    <span className="text-[11px] text-muted-foreground font-normal">Supports PNG, SVG, HTTPS URLs</span>
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="hospital_logo"
-                      value={form.hospital_logo}
-                      onChange={(e) => handleChange('hospital_logo', e.target.value)}
-                      placeholder="https://example.com/logo.png or data:image/..."
-                      className="font-mono text-xs"
-                    />
-                    {form.hospital_logo && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleChange('hospital_logo', '')}
-                        className="text-xs text-destructive hover:bg-destructive/10"
-                      >
-                        Clear
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                <ImageUploadField
+                  id="hospital_logo"
+                  label="Hospital Logo"
+                  value={form.hospital_logo}
+                  onChange={(val) => handleChange('hospital_logo', val)}
+                  placeholder="https://example.com/hospital-logo.png"
+                  description="Upload file or enter URL. Client-side canvas auto-optimizes to max 512px WebP/PNG for instant sync across all portals."
+                  maxDimension={512}
+                />
 
                 <div className="space-y-1.5">
                   <Label htmlFor="description" className="text-xs font-semibold">

@@ -132,16 +132,73 @@
 ::-webkit-scrollbar-thumb { background: hsl(var(--muted-foreground) / 0.15); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.3); }
 
-/* ===== Mobile ===== */
-html, body { overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
+/* ===== Mobile & Performance ===== */
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+  min-height: 100%;
+}
+body {
+  height: 100%;
+  min-height: 100%;
+}
+#root {
+  height: 100%;
+  min-height: 100%;
+}
+@supports (height: 100dvh) {
+  html, body, #root {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+}
+html, body {
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
 :root {
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
+  --mobile-bottom-nav-height: 3.75rem;
+  --mobile-bottom-spacer-extra: 2rem;
+  --mobile-bottom-safe-space: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--mobile-bottom-spacer-extra));
 }
-nav, button, [role="tab"], [role="button"], a { -webkit-user-select: none; user-select: none; }
+nav, button, [role="tab"], [role="button"], a {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
 p, span.content, .medical-notes, textarea, input { user-select: text; }
+
+/* Safe Area Inset Utilities */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pb-safe-nav {
+  padding-bottom: var(--mobile-bottom-safe-space);
+}
+
+/* Real Layout Bottom Spacer for Fixed Mobile Navigation */
+.mobile-bottom-nav-spacer {
+  display: block;
+  width: 100%;
+  height: var(--mobile-bottom-safe-space);
+  min-height: var(--mobile-bottom-safe-space);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .mobile-bottom-nav-spacer {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+  }
+}
 
 /* ===== Premium Design System ===== */
 .shadow-soft { box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03); }

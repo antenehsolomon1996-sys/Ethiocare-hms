@@ -91,8 +91,12 @@ const MedicationAdministration = lazy(() => import('@/pages/nurse/MedicationAdmi
 const NurseUnifiedTasks = lazy(() => import('@/pages/nurse/NurseUnifiedTasks'));
 
 const PageLoader = () => (
-  <div className="fixed inset-0 flex items-center justify-center">
-    <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+  <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] p-8 animate-in fade-in-50 duration-200">
+    <div className="relative flex items-center justify-center">
+      <div className="w-10 h-10 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <div className="absolute w-4 h-4 rounded-full bg-primary/10" />
+    </div>
+    <p className="text-xs font-medium text-muted-foreground mt-3 tracking-wide">Loading portal view...</p>
   </div>
 );
 

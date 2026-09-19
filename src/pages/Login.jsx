@@ -233,7 +233,7 @@ export default function Login() {
                   onClick={() => handleQuickLogin(r)}
                   disabled={loading}
                   title={`Sign in as ${r.label} (${r.role})`}
-                  className={`flex flex-col items-center justify-center p-2 rounded-lg border border-border bg-card/60 hover:bg-accent transition-all text-xs text-foreground/80 hover:text-foreground ${r.color} disabled:opacity-50`}
+                  className={`flex flex-col items-center justify-center p-2 min-h-[44px] rounded-lg border border-border bg-card/60 hover:bg-accent transition-all text-xs text-foreground/80 hover:text-foreground ${r.color} disabled:opacity-50`}
                 >
                   <Icon className="w-4 h-4 mb-1 text-primary" />
                   <span className="text-[10px] font-medium truncate w-full text-center">{r.label}</span>

@@ -32,11 +32,16 @@ export default function LabOrders() {
   const filtered = statusFilter === 'all' ? paidOrders : paidOrders.filter(o => o.test_status === statusFilter);
 
   const handleStartTest = async (order) => {
+    if (!order?.id) return;
     setIsSubmitting(true);
     try {
       await ethioCareClient.entities.LabOrder.update(order.id, { test_status: 'in_progress' });
-      if (order.visit_id) {
-        await ethioCareClient.entities.Visit.update(order.visit_id, { status: 'lab_processing' });
+      if (order.visit_id && typeof order.visit_id === 'string' && order.visit_id.trim()) {
+        try {
+          await ethioCareClient.entities.Visit.update(order.visit_id.trim(), { status: 'lab_processing' });
+        } catch (visitErr) {
+          console.warn('[LabOrders] Test started, but visit status sync encountered warning:', visitErr?.message || visitErr);
+        }
       }
       queryClient.invalidateQueries({ queryKey: ['labOrders', 'visits'] });
       toast.success('Test started');
@@ -49,7 +54,7 @@ export default function LabOrders() {
   };
 
   const handleSubmitResults = async () => {
-    if (!selected) return;
+    if (!selected?.id) return;
     if (!results?.trim()) {
       toast.error('Test results are required');
       return;
@@ -62,8 +67,12 @@ export default function LabOrders() {
         result_notes: resultNotes?.trim() || null,
         completed_date: format(new Date(), 'yyyy-MM-dd')
       });
-      if (selected.visit_id) {
-        await ethioCareClient.entities.Visit.update(selected.visit_id, { status: 'lab_complete' });
+      if (selected.visit_id && typeof selected.visit_id === 'string' && selected.visit_id.trim()) {
+        try {
+          await ethioCareClient.entities.Visit.update(selected.visit_id.trim(), { status: 'lab_complete' });
+        } catch (visitErr) {
+          console.warn('[LabOrders] Lab results submitted, but visit status sync encountered warning:', visitErr?.message || visitErr);
+        }
       }
 
       notificationService.dispatch({

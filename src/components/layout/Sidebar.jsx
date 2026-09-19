@@ -180,7 +180,7 @@ export default function Sidebar({ role }) {
         <div className="flex items-center gap-3">
           <div className={cn("w-9 h-9 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0 shadow-soft overflow-hidden", collapsed && "mx-auto")}>
             {orgLogo ? (
-              <img src={orgLogo} alt={orgName} className="w-full h-full object-contain p-1" />
+              <img src={orgLogo} alt={orgName} className="w-full h-full object-contain p-1" loading="lazy" decoding="async" />
             ) : (
               <Icon className="w-5 h-5 text-white" />
             )}

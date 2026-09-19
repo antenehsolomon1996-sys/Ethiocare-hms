@@ -72,16 +72,16 @@ const PORTAL_BOTTOM_NAV = {
     { path: '/billing/receipts', label: 'Receipts', icon: Receipt },
   ],
   owner: [
-    { path: '/owner', label: 'Home', icon: LayoutDashboard },
-    { path: '/owner/staff', label: 'Staff', icon: Users },
-    { path: '/owner/finances', label: 'Finances', icon: DollarSign },
-    { path: '/owner/reports', label: 'Reports', icon: BarChart2 },
+    { path: '/admin', label: 'Home', icon: LayoutDashboard },
+    { path: '/admin/staff', label: 'Staff', icon: Users },
+    { path: '/admin/finances', label: 'Finances', icon: DollarSign },
+    { path: '/admin/reports', label: 'Reports', icon: BarChart2 },
   ],
   admin: [
-    { path: '/owner', label: 'Home', icon: LayoutDashboard },
-    { path: '/owner/staff', label: 'Staff', icon: Users },
-    { path: '/owner/finances', label: 'Finances', icon: DollarSign },
-    { path: '/owner/reports', label: 'Reports', icon: BarChart2 },
+    { path: '/admin', label: 'Home', icon: LayoutDashboard },
+    { path: '/admin/staff', label: 'Staff', icon: Users },
+    { path: '/admin/finances', label: 'Finances', icon: DollarSign },
+    { path: '/admin/reports', label: 'Reports', icon: BarChart2 },
   ],
 };
 
@@ -132,15 +132,21 @@ export default function BottomTabBar({ role }) {
       {/* Fixed Luxury Bottom Tab Bar (Mobile/Tablet only) */}
       <nav
         aria-label="Mobile Navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/90 dark:bg-[#0c080a]/95 backdrop-blur-xl border-t border-border/60 dark:border-burgundy-900/30 shadow-premium flex items-stretch justify-around px-1"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 dark:bg-[#0c080a]/95 backdrop-blur-xl border-t border-border/60 dark:border-burgundy-900/30 shadow-premium flex items-stretch justify-around px-1"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          minHeight: 'calc(var(--mobile-bottom-nav-height, 3.75rem) + env(safe-area-inset-bottom, 0px))'
+        }}
       >
         {/* 4 Primary Navigation Items */}
         {primaryItems.map((item) => {
           const Icon = item.icon;
+          const normalize = (p) => (p || '').replace(/^\/owner/, '/admin');
+          const currentNorm = normalize(location.pathname);
+          const targetNorm = normalize(item.path);
           const isActive =
-            location.pathname === item.path ||
-            (item.path !== `/${role}` && item.path !== '/owner' && location.pathname.startsWith(item.path + '/'));
+            currentNorm === targetNorm ||
+            (targetNorm !== `/${role}` && targetNorm !== '/admin' && currentNorm.startsWith(targetNorm + '/'));
 
           return (
             <Link
@@ -184,7 +190,11 @@ export default function BottomTabBar({ role }) {
 
       {/* Luxury "More" Bottom Sheet Drawer */}
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] overflow-y-auto p-5 pb-8 border-t border-border/60 bg-background/95 backdrop-blur-xl">
+        <SheetContent
+          side="bottom"
+          className="rounded-t-3xl max-h-[85vh] max-h-[85dvh] overflow-y-auto p-5 border-t border-border/60 bg-background/95 backdrop-blur-xl"
+          style={{ paddingBottom: 'calc(var(--mobile-bottom-spacer-extra, 2rem) + env(safe-area-inset-bottom, 0px))' }}
+        >
           <SheetHeader className="text-left pb-4 border-b border-border/50">
             <div className="flex items-center justify-between">
               <div>
