@@ -8,11 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useState } from 'react';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { notificationService } from '@/services/notification.service';
 import { useAuth } from '@/lib/AuthContext';
-import { User, FlaskConical } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { User, FlaskConical, Building2 } from 'lucide-react';
 
 export default function LabOrders() {
   const { user } = useAuth();
@@ -148,12 +148,31 @@ export default function LabOrders() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Lab Diagnostic Orders</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Strict Payment Gate: Showing <strong>{paidOrders.length} paid</strong> orders · Logged in as: <strong>{user?.full_name || 'Lab Assistant'}</strong>
-          </p>
+      {/* Personalized Header Card */}
+      <div className="bg-card rounded-2xl border border-border p-4 shadow-soft flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+            <FlaskConical className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold tracking-tight">
+                {user?.full_name ? `Lab Orders · ${user.full_name}` : 'Lab Diagnostic Orders'}
+              </h1>
+              <Badge variant="outline" className="text-xs font-mono bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30">
+                Staff ID: {user?.id?.slice(0, 8).toUpperCase() || 'LAB'}
+              </Badge>
+              {user?.assigned_room_number && (
+                <Badge variant="outline" className="text-xs font-mono bg-primary/10 text-primary border-primary/30 flex items-center gap-1">
+                  <Building2 className="w-3 h-3" />
+                  Room {user.assigned_room_number}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Strict Payment Gate: Showing <strong>{paidOrders.length} paid</strong> orders
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">

@@ -15,11 +15,14 @@ export function buildDoctorList(doctorEntities = [], staffList = []) {
         id: d.id,
         full_name: d.full_name,
         specialty: d.specialty || 'General Practice',
+        assigned_room_id: d.assigned_room_id || null,
+        assigned_room_number: d.assigned_room_number || null,
+        email: d.email || null,
         source: 'doctor_entity'
       });
     });
 
-  // Second pass: Staff records — only if not already in map
+  // Second pass: Staff records — only if not already in map or enrich room
   staffList
     .filter(s => s.role === 'doctor' && s.status === 'active')
     .forEach(s => {
@@ -28,8 +31,17 @@ export function buildDoctorList(doctorEntities = [], staffList = []) {
           id: null, // no Doctor entity record
           full_name: s.full_name,
           specialty: s.specialization || 'General Practice',
+          assigned_room_id: s.assigned_room_id || null,
+          assigned_room_number: s.assigned_room_number || null,
+          email: s.email || null,
           source: 'staff'
         });
+      } else {
+        const existing = map.get(s.full_name);
+        if (!existing.assigned_room_number && s.assigned_room_number) {
+          existing.assigned_room_number = s.assigned_room_number;
+          existing.assigned_room_id = s.assigned_room_id;
+        }
       }
     });
 

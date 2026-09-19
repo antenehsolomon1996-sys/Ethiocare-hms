@@ -188,10 +188,21 @@ export default function NurseUnifiedTasks() {
       {/* Header with Scope Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Nurse Care & Tasks</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Logged in as: <span className="font-semibold text-foreground">{user?.full_name || 'Staff Nurse'}</span>
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {user?.full_name ? `Welcome, ${user.full_name}` : 'Nurse Care & Tasks'}
+          </h1>
+          <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-muted-foreground">
+            <span>Staff ID: <strong className="font-mono text-foreground">{user?.id?.slice(0, 8).toUpperCase() || 'NURS-01'}</strong></span>
+            <span>•</span>
+            {user?.assigned_room_number ? (
+              <Badge variant="outline" className="text-[11px] font-mono bg-primary/10 text-primary border-primary/30">
+                <Building2 className="w-3 h-3 mr-1" />
+                Station: Room {user.assigned_room_number}
+              </Badge>
+            ) : (
+              <span className="italic">General Nursing Station</span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border shrink-0 self-start sm:self-auto">

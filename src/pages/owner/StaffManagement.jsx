@@ -30,7 +30,20 @@ const SPECIALTIES = [
   'ENT', 'Psychiatry', 'Emergency Medicine', 'Other'
 ];
 
-const emptyForm = { full_name: '', email: '', personal_email: '', username: '', role: 'doctor', department: '', specialization: '', phone: '', license_number: '', status: 'active' };
+const emptyForm = { 
+  full_name: '', 
+  email: '', 
+  personal_email: '', 
+  username: '', 
+  role: 'doctor', 
+  department: '', 
+  specialization: '', 
+  phone: '', 
+  license_number: '', 
+  status: 'active',
+  assigned_room_id: '',
+  assigned_room_number: ''
+};
 
 function generateActivationCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -91,6 +104,12 @@ export default function StaffManagement() {
     queryFn: () => ethioCareClient.entities.User.list()
   });
 
+  const { data: rooms = [] } = useQuery({
+    queryKey: ['rooms'],
+    queryFn: () => ethioCareClient.entities.Room.list(),
+    refetchInterval: 15000
+  });
+
   const getUserStatus = (email) => {
     const user = users.find(u => u.email?.toLowerCase() === email?.toLowerCase());
     if (!user) return 'invited';
@@ -115,7 +134,8 @@ export default function StaffManagement() {
     const matchSearch = !search ||
       s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
       s.email?.toLowerCase().includes(search.toLowerCase()) ||
-      s.username?.toLowerCase().includes(search.toLowerCase());
+      s.username?.toLowerCase().includes(search.toLowerCase()) ||
+      s.assigned_room_number?.toLowerCase().includes(search.toLowerCase());
     const matchRole = roleFilter === 'all' || s.role === roleFilter;
     return matchSearch && matchRole;
   });
@@ -134,6 +154,8 @@ export default function StaffManagement() {
       phone: member.phone || '',
       license_number: member.license_number || '',
       status: member.status || 'active',
+      assigned_room_id: member.assigned_room_id || '',
+      assigned_room_number: member.assigned_room_number || '',
     });
     setEditId(member.id);
     setGeneratedCreds(null);
@@ -145,57 +167,115 @@ export default function StaffManagement() {
       toast.error('Name, email, and role are required');
       return;
     }
+
+    // Exclusivity validation: Check if selected room is exclusive and already assigned to another active staff
+    if (form.assigned_room_id) {
+      const targetRoom = rooms.find(r => String(r.id) === String(form.assigned_room_id));
+      const isExclusive = targetRoom?.is_exclusive !== false; // default true
+      if (isExclusive) {
+        const conflictingStaff = staff.find(s => 
+          String(s.assigned_room_id) === String(form.assigned_room_id) &&
+          s.status === 'active' &&
+          (!editId || String(s.id) !== String(editId))
+        );
+        if (conflictingStaff) {
+          toast.error(`Room Conflict: Room ${targetRoom.room_number} is exclusive and already assigned to ${conflictingStaff.full_name} (${conflictingStaff.role}).`);
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     try {
+      const selectedRoom = rooms.find(r => String(r.id) === String(form.assigned_room_id));
+      const payload = {
+        ...form,
+        assigned_room_id: form.assigned_room_id || null,
+        assigned_room_number: selectedRoom ? selectedRoom.room_number : (form.assigned_room_number || null)
+      };
+
+      let staffId = editId;
+
       if (editId) {
-        await ethioCareClient.entities.Staff.update(editId, form);
+        await ethioCareClient.entities.Staff.update(editId, payload);
         toast.success('Staff member updated');
         setFormOpen(false);
       } else {
         const code = generateActivationCode();
         const newStaff = await ethioCareClient.entities.Staff.create({
-          ...form,
+          ...payload,
           activation_code: code,
           activation_used: false,
           password_set: false,
         });
+        staffId = newStaff.id;
         setGeneratedCreds({
           name: form.full_name,
           email: form.email,
           username: form.username,
           activationCode: code,
           role: ROLES.find(r => r.value === form.role)?.label || form.role,
+          room: payload.assigned_room_number ? `Room ${payload.assigned_room_number}` : 'Unassigned'
         });
         toast.success('Staff member created', {
           description: `Hospital email: ${form.email}`,
           duration: 10000,
         });
-        // If role is doctor, ensure a corresponding Doctor entity exists
-        if (form.role === 'doctor') {
-          try {
-            const existingDocs = await ethioCareClient.entities.Doctor.list();
-            const exists = existingDocs.find(d => 
-              (d.email && d.email.toLowerCase() === form.email.toLowerCase()) ||
-              (d.full_name && d.full_name.toLowerCase() === form.full_name.toLowerCase())
-            );
-            if (!exists) {
-              await ethioCareClient.entities.Doctor.create({
-                full_name: form.full_name,
-                email: form.email,
-                specialty: form.specialization || form.department || 'General Practice',
-                doctor_type: 'Staff Doctor',
-                status: form.status || 'active',
-                availability: 'available'
-              });
-              queryClient.invalidateQueries({ queryKey: ['doctors'] });
-            }
-          } catch (syncErr) {
-            console.warn('[StaffManagement] Doctor sync note:', syncErr);
-          }
+      }
+
+      // If room was assigned, update the Room's assigned staff info for quick cross-referencing
+      if (payload.assigned_room_id) {
+        try {
+          await ethioCareClient.entities.Room.update(payload.assigned_room_id, {
+            assigned_staff_id: staffId,
+            assigned_staff_name: payload.full_name,
+            assigned_staff_role: payload.role
+          });
+        } catch (rmErr) {
+          console.warn('[StaffManagement] Room sync note:', rmErr);
         }
       }
+
+      // If role is doctor, ensure a corresponding Doctor entity exists with room synchronization
+      if (form.role === 'doctor') {
+        try {
+          const existingDocs = await ethioCareClient.entities.Doctor.list();
+          const existingDoc = existingDocs.find(d => 
+            (d.email && d.email.toLowerCase() === form.email.toLowerCase()) ||
+            (d.full_name && d.full_name.toLowerCase() === form.full_name.toLowerCase()) ||
+            (staffId && d.staff_id === staffId)
+          );
+          if (existingDoc) {
+            await ethioCareClient.entities.Doctor.update(existingDoc.id, {
+              full_name: form.full_name,
+              email: form.email,
+              specialty: form.specialization || form.department || 'General Practice',
+              assigned_room_id: payload.assigned_room_id,
+              assigned_room_number: payload.assigned_room_number,
+              status: form.status || 'active'
+            });
+          } else {
+            await ethioCareClient.entities.Doctor.create({
+              staff_id: staffId,
+              full_name: form.full_name,
+              email: form.email,
+              specialty: form.specialization || form.department || 'General Practice',
+              doctor_type: 'Staff Doctor',
+              status: form.status || 'active',
+              availability: 'available',
+              assigned_room_id: payload.assigned_room_id,
+              assigned_room_number: payload.assigned_room_number
+            });
+          }
+          queryClient.invalidateQueries({ queryKey: ['doctors'] });
+        } catch (syncErr) {
+          console.warn('[StaffManagement] Doctor sync note:', syncErr);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       queryClient.invalidateQueries({ queryKey: ['doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
     } catch (err) {
       toast.error(err.message || 'Failed to save staff member');
     }
@@ -320,6 +400,7 @@ export default function StaffManagement() {
                     <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Hospital Email</th>
                     <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Username</th>
                     <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Role</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Assigned Room</th>
                     <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Activation</th>
                     <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Status</th>
                     <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
@@ -334,6 +415,16 @@ export default function StaffManagement() {
                         <td className="px-4 py-3 text-muted-foreground text-xs">{member.email}</td>
                         <td className="px-4 py-3 text-muted-foreground text-xs font-mono">{member.username || '-'}</td>
                         <td className="px-4 py-3">{ROLES.find(r => r.value === member.role)?.label || member.role}</td>
+                        <td className="px-4 py-3">
+                          {member.assigned_room_number ? (
+                            <Badge variant="outline" className="text-xs font-mono bg-primary/5 text-primary border-primary/20">
+                              <Building2 className="w-3 h-3 mr-1" />
+                              Room {member.assigned_room_number}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Unassigned</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           {member.password_set ? (
                             <Badge variant="success" className="text-xs gap-1">
@@ -499,6 +590,42 @@ export default function StaffManagement() {
                 </div>
               </div>
             )}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <Label>Assigned Physical Room / Workspace</Label>
+                <span className="text-[11px] text-muted-foreground">Exclusivity enforced</span>
+              </div>
+              <Select 
+                value={form.assigned_room_id || '__none'} 
+                onValueChange={v => {
+                  if (v === '__none') {
+                    setForm({ ...form, assigned_room_id: '', assigned_room_number: '' });
+                  } else {
+                    const r = rooms.find(item => String(item.id) === String(v));
+                    setForm({ ...form, assigned_room_id: v, assigned_room_number: r?.room_number || '' });
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select physical room or workspace..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">No Room Assigned (Float / Unassigned)</SelectItem>
+                  {rooms.map(r => {
+                    const isExclusive = r.is_exclusive !== false;
+                    const occupant = staff.find(s => String(s.assigned_room_id) === String(r.id) && s.status === 'active' && (!editId || String(s.id) !== String(editId)));
+                    return (
+                      <SelectItem 
+                        key={r.id} 
+                        value={String(r.id)}
+                        disabled={isExclusive && Boolean(occupant)}
+                      >
+                        Room {r.room_number} — {r.department || r.room_type} ({r.floor}) {isExclusive ? '[Exclusive]' : '[Shared]'} {occupant ? `(Occupied by ${occupant.full_name})` : ''}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label>Account Status</Label>
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>

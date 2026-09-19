@@ -29,7 +29,8 @@ export default function RoomBedManagement() {
     department: 'Inpatient Ward',
     floor: '1st Floor',
     daily_rate: '500',
-    status: 'available'
+    status: 'available',
+    is_exclusive: true
   });
 
   // Bed modal state
@@ -63,6 +64,12 @@ export default function RoomBedManagement() {
     refetchInterval: 15000
   });
 
+  const { data: staff = [] } = useQuery({
+    queryKey: ['staff'],
+    queryFn: () => ethioCareClient.entities.Staff.list(),
+    refetchInterval: 15000
+  });
+
   // Room Handlers
   const handleOpenRoomModal = (room = null) => {
     if (room) {
@@ -72,8 +79,9 @@ export default function RoomBedManagement() {
         room_type: room.room_type || 'standard',
         department: room.department || 'Inpatient Ward',
         floor: room.floor || '1st Floor',
-        daily_rate: String(room.daily_rate || 500),
-        status: room.status || 'available'
+        daily_rate: String(room.daily_rate ?? 500),
+        status: room.status || 'available',
+        is_exclusive: room.is_exclusive !== false
       });
     } else {
       setEditingRoom(null);
@@ -83,7 +91,8 @@ export default function RoomBedManagement() {
         department: 'Inpatient Ward',
         floor: '1st Floor',
         daily_rate: '500',
-        status: 'available'
+        status: 'available',
+        is_exclusive: true
       });
     }
     setRoomModalOpen(true);
@@ -229,6 +238,29 @@ export default function RoomBedManagement() {
     { header: 'Type', cell: (r) => <span className="capitalize">{r.room_type?.replace(/_/g, ' ')}</span> },
     { header: 'Department', accessor: 'department' },
     { header: 'Floor', accessor: 'floor' },
+    { 
+      header: 'Workspace Policy', 
+      cell: (r) => (
+        <Badge variant={r.is_exclusive !== false ? 'secondary' : 'outline'} className="text-[11px]">
+          {r.is_exclusive !== false ? 'Exclusive (Single Staff)' : 'Shared (Multi Staff)'}
+        </Badge>
+      )
+    },
+    { 
+      header: 'Assigned Staff', 
+      cell: (r) => {
+        const assigned = staff.find(s => String(s.assigned_room_id) === String(r.id) && s.status === 'active');
+        if (assigned) {
+          return (
+            <span className="text-xs font-semibold text-primary flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {assigned.full_name} ({assigned.role})
+            </span>
+          );
+        }
+        return <span className="text-xs text-muted-foreground italic">None (Available)</span>;
+      }
+    },
     { header: 'Daily Rate (ETB)', cell: (r) => <span className="font-mono font-bold text-primary">{r.daily_rate} ETB</span> },
     { header: 'Status', cell: (r) => <StatusBadge status={r.status} /> },
     { 
@@ -429,6 +461,23 @@ export default function RoomBedManagement() {
                   onChange={e => setRoomForm(f => ({ ...f, daily_rate: e.target.value }))}
                 />
               </div>
+            </div>
+
+            <div>
+              <Label>Workspace Staff Exclusivity</Label>
+              <Select 
+                value={roomForm.is_exclusive ? 'exclusive' : 'shared'} 
+                onValueChange={val => setRoomForm(f => ({ ...f, is_exclusive: val === 'exclusive' }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="exclusive">Exclusive Room (Allows only 1 active staff member)</SelectItem>
+                  <SelectItem value="shared">Shared Workspace (Allows multiple staff members)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Consultation and dedicated offices should be set to Exclusive to prevent double-booking staff to the same room.
+              </p>
             </div>
 
             <div>

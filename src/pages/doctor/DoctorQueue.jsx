@@ -392,15 +392,56 @@ export default function DoctorQueue() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
-          {selectedDoctor ? `Dr. ${selectedDoctor.full_name}'s Queue` : 'Patient Queue'}
-        </h1>
-        {mySpecialty && (
-          <Badge className="bg-primary/10 text-primary text-sm px-3 py-1">
-            <Stethoscope className="w-3.5 h-3.5 mr-1.5" />{mySpecialty}
-          </Badge>
-        )}
+      {/* Personalized Workspace Header */}
+      <div className="bg-card rounded-2xl border border-border p-5 shadow-soft">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+              <Stethoscope className="w-7 h-7" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {selectedDoctor ? `Welcome, Dr. ${selectedDoctor.full_name}` : 'Doctor Consultation Workspace'}
+                </h1>
+                <Badge variant="outline" className="text-xs font-mono bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30">
+                  ID: {selectedDoctor?.id?.slice(0, 8).toUpperCase() || 'PHYS-01'}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground flex items-center gap-1">
+                  <Stethoscope className="w-3.5 h-3.5 text-primary" />
+                  {mySpecialty || 'General Practice'}
+                </span>
+                <span className="text-muted-foreground/50">•</span>
+                <span className="flex items-center gap-1 font-medium">
+                  <Building2 className="w-3.5 h-3.5 text-primary" />
+                  {selectedDoctor?.assigned_room_number ? (
+                    <strong className="text-primary font-mono">Room {selectedDoctor.assigned_room_number}</strong>
+                  ) : (
+                    <span className="italic">Consultation OPD</span>
+                  )}
+                </span>
+                <span className="text-muted-foreground/50">•</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                  {selectedDoctor?.doctor_type || 'Attending Physician'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 sm:self-center bg-muted/50 p-2.5 rounded-xl border border-border shrink-0">
+            <div className="text-right">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Personal Queue</p>
+              <p className="text-lg font-mono font-bold text-primary">{waiting.length} Waiting</p>
+            </div>
+            <div className="h-8 w-px bg-border mx-1" />
+            <div className="text-right">
+              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Today's Total</p>
+              <p className="text-lg font-mono font-bold text-foreground">{myVisits.length}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {!selectedDoctor && (

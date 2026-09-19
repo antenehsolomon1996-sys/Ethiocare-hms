@@ -14,7 +14,7 @@ import AddHistoricalRecordModal from '@/components/reception/AddHistoricalRecord
 import { 
   Search, User, Phone, Hash, Calendar, Pencil, 
   Send, ChevronDown, Clock, PlusCircle, UserPlus, 
-  AlertCircle, CheckCircle2, ShieldCheck, History, BookOpen
+  AlertCircle, CheckCircle2, ShieldCheck, History, BookOpen, Building2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -595,8 +595,13 @@ export default function PatientSearch() {
                     <SelectItem key={d.full_name} value={d.full_name} className="py-2">
                       <div className="flex items-center justify-between gap-3 w-full">
                         <div className="flex flex-col text-left">
-                          <span className="font-semibold text-foreground text-xs leading-none">
+                          <span className="font-semibold text-foreground text-xs leading-none flex items-center gap-1.5">
                             {d.full_name}
+                            {d.assigned_room_number && (
+                              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                                Room {d.assigned_room_number}
+                              </span>
+                            )}
                           </span>
                           <span className="text-[10px] text-muted-foreground mt-0.5">
                             {d.specialty || 'General Practice'}
@@ -616,6 +621,15 @@ export default function PatientSearch() {
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedDoctor && selectedDoctor.assigned_room_number && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-xs text-primary flex items-center gap-2">
+                <Building2 className="w-4 h-4 shrink-0 text-primary" />
+                <span>
+                  Consultation Workspace: <strong>Room {selectedDoctor.assigned_room_number}</strong>
+                </span>
+              </div>
+            )}
 
             {/* Applicable Registration Payment Option */}
             <div className="rounded-xl bg-primary/5 border border-primary/20 p-3.5 space-y-2.5">

@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { ethioCareClient } from '@/api/ethioCareClient';
+import { useAuth } from '@/lib/AuthContext';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
-import { FlaskConical, Clock, CheckCircle, Activity, ChevronRight } from 'lucide-react';
+import { FlaskConical, Clock, CheckCircle, Activity, ChevronRight, Building2, User } from 'lucide-react';
 import { startOfDay } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function LabDashboard() {
+  const { user } = useAuth();
   const { data: labOrders = [] } = useQuery({
     queryKey: ['labOrders'],
     queryFn: () => ethioCareClient.entities.LabOrder.list('-created_date', 100),
@@ -23,13 +26,38 @@ export default function LabDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">Laboratory Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Lab orders & test results</p>
+      {/* Personalized Header */}
+      <div className="bg-card rounded-2xl border border-border p-5 shadow-soft flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-13 h-13 rounded-2xl bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+            <FlaskConical className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-heading text-2xl font-bold tracking-tight">
+                {user?.full_name ? `Welcome, ${user.full_name}` : 'Laboratory Workspace'}
+              </h1>
+              <Badge variant="outline" className="text-xs font-mono bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30">
+                Staff ID: {user?.id?.slice(0, 8).toUpperCase() || 'LAB-01'}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+              <span className="font-semibold text-foreground">Diagnostic Testing & Analysis</span>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="flex items-center gap-1 font-medium">
+                <Building2 className="w-3.5 h-3.5 text-primary" />
+                {user?.assigned_room_number ? (
+                  <strong className="text-primary font-mono">Assigned Lab: Room {user.assigned_room_number}</strong>
+                ) : (
+                  <span>Central Clinical Lab</span>
+                )}
+              </span>
+            </div>
+          </div>
         </div>
-        <Link to="/lab/orders"><Button>View Orders</Button></Link>
+        <div className="flex gap-2">
+          <Link to="/lab/orders"><Button>View Orders</Button></Link>
+        </div>
       </div>
 
       {/* Stats */}

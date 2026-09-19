@@ -1,35 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { ethioCareClient } from '@/api/ethioCareClient';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogIn, Mail, Lock, ShieldCheck, UserCheck, Stethoscope, UserPlus, Activity, FlaskConical, Pill, Receipt } from "lucide-react";
+import { LogIn, Mail, Lock, ShieldCheck, UserCheck, Stethoscope, UserPlus, Activity, FlaskConical, Pill, Receipt, Building2, User } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { useHospitalBranding } from "@/hooks/useHospitalBranding";
 
-const PORTALS = [
-  { value: "auto", label: "Auto-detect from role" },
-  { value: "owner", label: "Owner Portal" },
-  { value: "doctor", label: "Doctor Portal" },
-  { value: "receptionist", label: "Reception Portal" },
-  { value: "nurse", label: "Nurse Portal" },
-  { value: "lab_technician", label: "Lab Portal" },
-  { value: "pharmacist", label: "Pharmacy Portal" },
-  { value: "accountant", label: "Billing Portal" },
-];
-
-const QUICK_ROLES = [
-  { label: "Admin", email: "admin@grandhorizonhospital.com", code: "HMS-ADMN-2026", role: "owner", icon: UserCheck, color: "hover:border-blue-500" },
-  { label: "Doctor", email: "dr.selamawit@grandhorizonhospital.com", code: "HMS-DOC1-2026", role: "doctor", icon: Stethoscope, color: "hover:border-indigo-500" },
-  { label: "Reception", email: "almaz.t@grandhorizonhospital.com", code: "HMS-RCPT-2026", role: "receptionist", icon: UserPlus, color: "hover:border-teal-500" },
-  { label: "Nurse", email: "tigist.m@grandhorizonhospital.com", code: "HMS-NURS-2026", role: "nurse", icon: Activity, color: "hover:border-pink-500" },
-  { label: "Lab", email: "kidus.w@grandhorizonhospital.com", code: "HMS-LABT-2026", role: "lab_technician", icon: FlaskConical, color: "hover:border-purple-500" },
-  { label: "Pharmacy", email: "bethelhem.s@grandhorizonhospital.com", code: "HMS-PHAR-2026", role: "pharmacist", icon: Pill, color: "hover:border-emerald-500" },
-  { label: "Billing", email: "mulugeta.k@grandhorizonhospital.com", code: "HMS-BILL-2026", role: "accountant", icon: Receipt, color: "hover:border-amber-500" },
+const STAFF_TYPES = [
+  { value: "doctor", label: "Doctor ▼", icon: Stethoscope, role: "doctor" },
+  { value: "nurse", label: "Nurse ▼", icon: Activity, role: "nurse" },
+  { value: "lab_technician", label: "Lab ▼", icon: FlaskConical, role: "lab_technician" },
+  { value: "receptionist", label: "Reception ▼", icon: UserPlus, role: "receptionist" },
+  { value: "pharmacist", label: "Pharmacy ▼", icon: Pill, role: "pharmacist" },
+  { value: "owner", label: "Owner/Admin", icon: UserCheck, role: "owner" },
 ];
 
 const ROLE_ROUTES = {
@@ -54,17 +43,60 @@ export default function Login() {
   const { hospital } = useHospitalBranding();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialPortal = searchParams.get('portal') || 'auto';
+  const initialPortalParam = searchParams.get('portal');
 
-  const showDevSwitcher = hospital?.dev_portal_switcher_enabled !== undefined
-    ? Boolean(hospital.dev_portal_switcher_enabled)
-    : import.meta.env.DEV;
+  const [staffType, setStaffType] = useState(() => {
+    if (initialPortalParam && STAFF_TYPES.some(t => t.value === initialPortalParam || t.role === initialPortalParam)) {
+      return initialPortalParam;
+    }
+    return 'doctor';
+  });
 
+  const [selectedStaffId, setSelectedStaffId] = useState("");
   const [email, setEmail] = useState("");
   const [credential, setCredential] = useState("");
-  const [targetPortal, setTargetPortal] = useState(initialPortal);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Load all provisioned staff from database
+  const { data: allStaff = [] } = useQuery({
+    queryKey: ['staff_login_list'],
+    queryFn: () => ethioCareClient.entities.Staff.list('-created_date', 200),
+    refetchInterval: 15000
+  });
+
+  // Filter provisioned members based on selected staff type
+  const activeStaffForType = useMemo(() => {
+    return allStaff.filter(s => {
+      if (staffType === 'owner') return s.role === 'owner' || s.role === 'admin';
+      return s.role === staffType;
+    });
+  }, [allStaff, staffType]);
+
+  // When staffType changes, pick the first staff member if available or clear
+  useEffect(() => {
+    if (activeStaffForType.length > 0) {
+      const first = activeStaffForType[0];
+      setSelectedStaffId(String(first.id));
+      setEmail(first.email || "");
+      setCredential("");
+      setError("");
+    } else {
+      setSelectedStaffId("");
+      setEmail("");
+      setCredential("");
+    }
+  }, [staffType, activeStaffForType]);
+
+  const handleSelectStaffMember = (staffId) => {
+    setSelectedStaffId(staffId);
+    const chosen = activeStaffForType.find(s => String(s.id) === String(staffId));
+    if (chosen) {
+      setEmail(chosen.email || "");
+      setCredential("");
+      setError("");
+    }
+  };
 
   // If already authenticated and not loading, navigate immediately to authorized portal
   useEffect(() => {
@@ -80,8 +112,13 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const portalParam = targetPortal !== "auto" ? targetPortal : undefined;
-      const profile = await login(email, credential, portalParam);
+      // Find selected staff member to verify targeted credentials
+      const selectedMember = allStaff.find(s => s.email?.toLowerCase() === email.trim().toLowerCase());
+      if (selectedMember && selectedMember.role !== staffType && !(staffType === 'owner' && (selectedMember.role === 'owner' || selectedMember.role === 'admin'))) {
+        throw new Error(`Access denied. Credentials for ${selectedMember.full_name} cannot be used in the ${staffType} workspace.`);
+      }
+
+      const profile = await login(email, credential, staffType);
       const normalizedRole = profile?.role ? profile.role.toLowerCase().trim() : '';
       const destination = ROLE_ROUTES[normalizedRole] || "/admin";
       navigate(destination, { replace: true });
@@ -92,33 +129,13 @@ export default function Login() {
     }
   };
 
-  const handleQuickLogin = async (roleObj) => {
-    setEmail(roleObj.email);
-    setCredential(roleObj.code);
-    setTargetPortal(roleObj.role);
-    setError("");
-    setLoading(true);
-    try {
-      const profile = await login(roleObj.email, roleObj.code, roleObj.role);
-      const normalizedRole = profile?.role ? profile.role.toLowerCase().trim() : '';
-      const destination = ROLE_ROUTES[normalizedRole] || "/admin";
-      navigate(destination, { replace: true });
-    } catch (err) {
-      setError(err.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogle = () => {
-    ethioCareClient.auth.loginWithProvider("google", "/");
-  };
+  const selectedMemberData = activeStaffForType.find(s => String(s.id) === String(selectedStaffId));
 
   return (
     <AuthLayout
       icon={LogIn}
-      title="Hospital Staff Login"
-      subtitle="Sign in with your hospital email and staff code or password"
+      title="Individual Staff Workspace Login"
+      subtitle="Sign in to your dedicated hospital workspace, assigned room, and personal queue"
       footer={
         <>
           First time signing in?{" "}
@@ -128,24 +145,6 @@ export default function Login() {
         </>
       }
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-5"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
-      </Button>
-
-      <div className="relative mb-5">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground tracking-wider">or staff credentials</span>
-        </div>
-      </div>
-
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-destructive text-sm flex items-start gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-1.5 shrink-0" />
@@ -153,26 +152,95 @@ export default function Login() {
         </div>
       )}
 
+      {/* Staff-Type Selector Tabs */}
+      <div className="space-y-3 mb-5">
+        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Staff Role</Label>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+          {STAFF_TYPES.map((type) => {
+            const Icon = type.icon;
+            const isSelected = staffType === type.value;
+            return (
+              <button
+                key={type.value}
+                type="button"
+                onClick={() => setStaffType(type.value)}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border text-xs font-medium transition-all ${
+                  isSelected
+                    ? "border-primary bg-primary/10 text-primary ring-1 ring-primary shadow-xs font-bold"
+                    : "border-border bg-card/60 hover:bg-accent text-foreground/80 hover:text-foreground"
+                }`}
+              >
+                <Icon className={`w-4 h-4 mb-1 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                <span className="text-[11px] truncate w-full text-center">{type.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="portal">Target Portal</Label>
-          <div className="relative">
-            <Select value={targetPortal} onValueChange={setTargetPortal}>
-              <SelectTrigger id="portal" className="h-12">
-                <SelectValue placeholder="Select portal" />
-              </SelectTrigger>
-              <SelectContent>
-                {PORTALS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Provisioned Individual Staff List Selector */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="staff-member">Select Provisioned {STAFF_TYPES.find(t => t.value === staffType)?.label.replace(' ▼', '')}</Label>
+            <span className="text-[11px] text-muted-foreground font-mono">{activeStaffForType.length} available</span>
           </div>
+          <Select value={selectedStaffId} onValueChange={handleSelectStaffMember}>
+            <SelectTrigger id="staff-member" className="h-12 bg-background">
+              <SelectValue placeholder="Choose individual staff account..." />
+            </SelectTrigger>
+            <SelectContent className="max-h-72">
+              {activeStaffForType.map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>
+                  <div className="flex items-center justify-between gap-3 w-full py-0.5">
+                    <div className="flex flex-col text-left">
+                      <span className="font-semibold text-xs text-foreground">
+                        {s.full_name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {s.specialization || s.department || s.role}
+                      </span>
+                    </div>
+                    {s.assigned_room_number && (
+                      <span className="text-[10px] bg-primary/10 text-primary font-mono px-2 py-0.5 rounded-full shrink-0 border border-primary/20">
+                        Room {s.assigned_room_number}
+                      </span>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+              {activeStaffForType.length === 0 && (
+                <SelectItem value="__none" disabled>
+                  No staff provisioned for this role yet
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="space-y-2">
+        {/* Selected Staff Workspace Preview Banner */}
+        {selectedMemberData && (
+          <div className="bg-muted/40 border border-border/80 rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <User className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-foreground truncate">{selectedMemberData.full_name}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{selectedMemberData.email}</p>
+              </div>
+            </div>
+            {selectedMemberData.assigned_room_number ? (
+              <span className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-semibold px-2 py-1 rounded-md text-[11px] shrink-0 border border-emerald-500/20">
+                Room {selectedMemberData.assigned_room_number}
+              </span>
+            ) : (
+              <span className="text-muted-foreground italic text-[11px] shrink-0">Float Room</span>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
           <Label htmlFor="email">Hospital Email</Label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -180,19 +248,18 @@ export default function Login() {
               id="email"
               type="email"
               autoComplete="email"
-              autoFocus
-              placeholder="you@grandhorizonhospital.com"
+              placeholder="name@grandhorizonhospital.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
+              className="pl-10 h-11"
               required
             />
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <Label htmlFor="credential">Password or Staff Code</Label>
+            <Label htmlFor="credential">Staff Code or Password</Label>
             <Link to="/forgot-password" className="text-xs text-primary hover:underline font-medium">
               Forgot password?
             </Link>
@@ -206,43 +273,19 @@ export default function Login() {
               placeholder="•••••••• or HMS-XXXX-XXXX"
               value={credential}
               onChange={(e) => setCredential(e.target.value)}
-              className="pl-10 h-12"
+              className="pl-10 h-11 font-mono text-sm"
               required
             />
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Enter your personal activation code (e.g. HMS-DOC1-2026) or private account password.
+          </p>
         </div>
 
-        <Button type="submit" className="w-full h-12 font-medium" loading={loading}>
-          {loading ? "Verifying..." : "Sign in to Portal"}
+        <Button type="submit" className="w-full h-11 font-medium text-sm" loading={loading}>
+          {loading ? "Verifying..." : `Sign in to ${selectedMemberData?.full_name || 'Individual Portal'}`}
         </Button>
       </form>
-
-      {/* Quick Portal Switcher (Controlled by Owner Setting) */}
-      {showDevSwitcher && (
-        <div className="mt-6 pt-5 border-t border-border">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 text-center">
-            Development Portal Switcher
-          </p>
-          <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
-            {QUICK_ROLES.map((r) => {
-              const Icon = r.icon;
-              return (
-                <button
-                  key={r.label}
-                  type="button"
-                  onClick={() => handleQuickLogin(r)}
-                  disabled={loading}
-                  title={`Sign in as ${r.label} (${r.role})`}
-                  className={`flex flex-col items-center justify-center p-2 min-h-[44px] rounded-lg border border-border bg-card/60 hover:bg-accent transition-all text-xs text-foreground/80 hover:text-foreground ${r.color} disabled:opacity-50`}
-                >
-                  <Icon className="w-4 h-4 mb-1 text-primary" />
-                  <span className="text-[10px] font-medium truncate w-full text-center">{r.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </AuthLayout>
   );
 }

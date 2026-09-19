@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { UserPlus, Send, CheckCircle2, AlertCircle, Clock, ArrowRight, UserCheck, Stethoscope, RefreshCw, FileText, History, BookOpen } from 'lucide-react';
+import { UserPlus, Send, CheckCircle2, AlertCircle, Clock, ArrowRight, UserCheck, Stethoscope, RefreshCw, FileText, History, BookOpen, Building2 } from 'lucide-react';
 import { buildDoctorList } from '@/lib/doctorUtils';
 import { notificationService } from '@/services/notification.service';
 import { patientFeeService } from '@/services/patientFee.service';
@@ -470,8 +470,13 @@ export default function RegisterPatient() {
                     <SelectItem key={d.full_name} value={d.full_name} className="py-2">
                       <div className="flex items-center justify-between gap-3 w-full">
                         <div className="flex flex-col text-left">
-                          <span className="font-semibold text-foreground text-xs leading-none">
+                          <span className="font-semibold text-foreground text-xs leading-none flex items-center gap-1.5">
                             {d.full_name}
+                            {d.assigned_room_number && (
+                              <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                                Room {d.assigned_room_number}
+                              </span>
+                            )}
                           </span>
                           <span className="text-[10px] text-muted-foreground mt-0.5">
                             {d.specialty || 'General Practice'}
@@ -496,6 +501,15 @@ export default function RegisterPatient() {
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedDoctor && selectedDoctor.assigned_room_number && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-xs text-primary flex items-center gap-2">
+                <Building2 className="w-4 h-4 shrink-0 text-primary" />
+                <span>
+                  Consultation Workspace: <strong>Room {selectedDoctor.assigned_room_number}</strong>
+                </span>
+              </div>
+            )}
 
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
               <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />

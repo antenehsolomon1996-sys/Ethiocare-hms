@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ethioCareClient } from '@/api/ethioCareClient';
+import { useAuth } from '@/lib/AuthContext';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
-import { Activity, Clock, CheckCircle, Syringe, ShoppingCart, Pill, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Activity, Clock, CheckCircle, Syringe, ShoppingCart, Pill, ChevronRight, AlertTriangle, Building2, User } from 'lucide-react';
 import { startOfDay } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ const URGENCY_STYLES = {
 
 export default function NurseDashboard() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { data: tasks = [] } = useQuery({
     queryKey: ['nurseTasks'],
     queryFn: () => ethioCareClient.entities.NurseTask.list('-created_date', 100),
@@ -57,13 +59,38 @@ export default function NurseDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">Nurse Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{startOfDay(new Date()).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+      {/* Personalized Header */}
+      <div className="bg-card rounded-2xl border border-border p-5 shadow-soft flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-13 h-13 rounded-2xl bg-pink-500/15 border border-pink-500/25 flex items-center justify-center text-pink-600 dark:text-pink-400 shrink-0">
+            <Activity className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-heading text-2xl font-bold tracking-tight">
+                {user?.full_name ? `Welcome, ${user.full_name}` : 'Nursing Workspace'}
+              </h1>
+              <Badge variant="outline" className="text-xs font-mono bg-pink-500/10 text-pink-700 dark:text-pink-300 border-pink-500/30">
+                Staff ID: {user?.id?.slice(0, 8).toUpperCase() || 'NURS-01'}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+              <span className="font-semibold text-foreground">Inpatient & Ward Nursing</span>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="flex items-center gap-1 font-medium">
+                <Building2 className="w-3.5 h-3.5 text-primary" />
+                {user?.assigned_room_number ? (
+                  <strong className="text-primary font-mono">Assigned Station: Room {user.assigned_room_number}</strong>
+                ) : (
+                  <span>Central Nursing Station</span>
+                )}
+              </span>
+            </div>
+          </div>
         </div>
-        <Link to="/nurse/unified-tasks"><Button>My Tasks</Button></Link>
+        <div className="flex gap-2">
+          <Link to="/nurse/unified-tasks"><Button>My Tasks</Button></Link>
+        </div>
       </div>
 
       {/* Stats */}

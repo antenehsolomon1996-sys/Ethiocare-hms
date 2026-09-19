@@ -3,7 +3,7 @@ import { ethioCareClient } from '@/api/ethioCareClient';
 import { useDoctorContext } from '@/lib/DoctorContext';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
-import { Users, Clock, Stethoscope, FlaskConical, CheckCircle, BookOpen, Calendar, TrendingUp, UserCheck, AlertTriangle } from 'lucide-react';
+import { Users, Clock, Stethoscope, FlaskConical, CheckCircle, BookOpen, Calendar, TrendingUp, UserCheck, AlertTriangle, Building2 } from 'lucide-react';
 import { format, startOfWeek, startOfMonth } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -70,12 +70,17 @@ export default function DoctorDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">{doctorProfile ? `Dr. ${doctorProfile.full_name}` : 'Doctor Portal'}</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-tight">{doctorProfile ? `Welcome, Dr. ${doctorProfile.full_name}` : 'Doctor Portal'}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <p className="text-sm text-muted-foreground">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
             {doctorProfile?.specialty && (
               <Badge variant="secondary" className="text-xs">
                 <Stethoscope className="w-3 h-3 mr-1" />{doctorProfile.specialty}
+              </Badge>
+            )}
+            {doctorProfile?.assigned_room_number && (
+              <Badge variant="outline" className="text-xs font-mono bg-primary/10 text-primary border-primary/20">
+                <Building2 className="w-3 h-3 mr-1" />Room {doctorProfile.assigned_room_number}
               </Badge>
             )}
             {doctorProfile?.doctor_type && (
@@ -103,7 +108,12 @@ export default function DoctorDashboard() {
             <div className="flex-1 min-w-0">
               <h3 className="font-heading font-bold">{doctorProfile.full_name}</h3>
               <p className="text-sm text-muted-foreground">{doctorProfile.doctor_type} · {doctorProfile.specialty}</p>
-              <div className="flex flex-wrap gap-3 mt-1">
+              <div className="flex flex-wrap gap-3 mt-1 items-center">
+                {doctorProfile.assigned_room_number && (
+                  <Badge variant="outline" className="text-xs font-mono bg-primary/10 text-primary border-primary/30">
+                    <Building2 className="w-3 h-3 mr-1" />Assigned Room: {doctorProfile.assigned_room_number}
+                  </Badge>
+                )}
                 {doctorProfile.department && <p className="text-xs text-muted-foreground">{doctorProfile.department} Dept.</p>}
                 {doctorProfile.license_number && <p className="text-xs text-muted-foreground">License: {doctorProfile.license_number}</p>}
                 {doctorProfile.years_experience && <p className="text-xs text-muted-foreground">{doctorProfile.years_experience} yrs exp.</p>}
