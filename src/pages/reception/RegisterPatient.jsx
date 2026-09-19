@@ -9,10 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { UserPlus, Send, CheckCircle2, AlertCircle, Clock, ArrowRight, UserCheck, Stethoscope, RefreshCw, FileText } from 'lucide-react';
+import { UserPlus, Send, CheckCircle2, AlertCircle, Clock, ArrowRight, UserCheck, Stethoscope, RefreshCw, FileText, History } from 'lucide-react';
 import { buildDoctorList } from '@/lib/doctorUtils';
 import { notificationService } from '@/services/notification.service';
 import { patientFeeService } from '@/services/patientFee.service';
+import AddHistoricalRecordModal from '@/components/reception/AddHistoricalRecordModal';
 
 export default function RegisterPatient() {
   const queryClient = useQueryClient();
@@ -61,6 +62,13 @@ export default function RegisterPatient() {
     queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 500)
   });
 
+  const { data: allHistory = [] } = useQuery({
+    queryKey: ['patientHistoryAll'],
+    queryFn: () => ethioCareClient.entities.PatientHistory.list('-visit_date', 1000)
+  });
+
+  const [historicalModalOpen, setHistoricalModalOpen] = useState(false);
+
   const doctors = useMemo(() => buildDoctorList(doctorEntities, staff), [doctorEntities, staff]);
 
   // Centralized active registration tariffs
@@ -89,12 +97,12 @@ export default function RegisterPatient() {
     }) || null;
   }, [patients, form.phone, form.full_name]);
 
-  // Evaluate 30-Day Treatment Rule for matched or selected patient
+  // Evaluate 30-Day Treatment Rule for matched or selected patient across visits and historical records
   const feeAssessment = useMemo(() => {
     const targetPatient = matchedExistingPatient || (existingPatientId ? patients.find(p => p.id === existingPatientId) : null);
     if (!targetPatient) return null;
-    return patientFeeService.determineRegistrationFee(targetPatient.id, services, visits);
-  }, [matchedExistingPatient, existingPatientId, patients, services, visits]);
+    return patientFeeService.determineRegistrationFee(targetPatient.id, services, visits, allHistory);
+  }, [matchedExistingPatient, existingPatientId, patients, services, visits, allHistory]);
 
   // Automatically select the appropriate tariff based on 30-day treatment rule if user hasn't explicitly picked one
   useEffect(() => {
@@ -364,17 +372,41 @@ export default function RegisterPatient() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button className="w-full sm:flex-1 h-11 font-medium gap-2" onClick={() => setSendToDoctor(true)}>
-                <Send className="w-4 h-4" />
-                Assign Doctor & Send to Queue
-              </Button>
-              <Button variant="outline" className="w-full sm:flex-1 h-11" onClick={handleResetForm}>
-                Register Another Patient
+            <div className="flex flex-col gap-2.5 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button className="w-full sm:flex-1 h-11 font-medium gap-2" onClick={() => setSendToDoctor(true)}>
+                  <Send className="w-4 h-4" />
+                  Assign Doctor & Send to Queue
+                </Button>
+                <Button variant="outline" className="w-full sm:flex-1 h-11" onClick={handleResetForm}>
+                  Register Another Patient
+                </Button>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-10 gap-2 text-xs border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                onClick={() => setHistoricalModalOpen(true)}
+              >
+                <History className="w-3.5 h-3.5" />
+                Add Previous / Historical Hospital Records for this Patient
               </Button>
             </div>
           </CardContent>
         </Card>
+
+        {created && (
+          <AddHistoricalRecordModal
+            open={historicalModalOpen}
+            onOpenChange={setHistoricalModalOpen}
+            patient={created}
+            onRecordAdded={() => {
+              queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
+              queryClient.invalidateQueries({ queryKey: ['patientHistory', created.id] });
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -489,14 +521,30 @@ export default function RegisterPatient() {
                   </p>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => handleUseExistingPatient(matchedExistingPatient)}
-                className="self-start sm:self-auto shrink-0 gap-1 text-xs"
-              >
-                Use Patient File <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
+              <div className="flex flex-wrap gap-2 self-start sm:self-auto shrink-0">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    handleUseExistingPatient(matchedExistingPatient);
+                    setHistoricalModalOpen(true);
+                  }}
+                  className="gap-1 text-xs border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  Add Past Records
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleUseExistingPatient(matchedExistingPatient)}
+                  className="gap-1 text-xs"
+                >
+                  Use Patient File <ArrowRight className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
 
             {feeAssessment && (
@@ -686,6 +734,18 @@ export default function RegisterPatient() {
           </div>
         </CardContent>
       </Card>
+
+      {(matchedExistingPatient || (existingPatientId ? patients.find(p => p.id === existingPatientId) : null)) && (
+        <AddHistoricalRecordModal
+          open={historicalModalOpen}
+          onOpenChange={setHistoricalModalOpen}
+          patient={matchedExistingPatient || patients.find(p => p.id === existingPatientId)}
+          onRecordAdded={() => {
+            queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
+            queryClient.invalidateQueries({ queryKey: ['patients'] });
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -9,7 +9,10 @@ export interface RegistrationFeeResult {
   serviceName: string;
   serviceId?: string;
   daysSinceLastVisit: number | null;
+  lastVisitDate: string | null;
+  lastVisitSource?: 'system' | 'historical';
   isRecent: boolean;
+  statusText: string;
   badgeText: string;
   badgeVariant: 'default' | 'secondary' | 'outline' | 'destructive';
 }
@@ -76,14 +79,18 @@ export const patientFeeService = {
 
   /**
    * Calculate registration fee according to the 30-day treatment rule:
-   * 1. Never treated before: standard New Patient Registration Fee (default 150 ETB).
-   * 2. Treated within the last 30 days (<= 30 days): Recent/Returning Patient Fee (default 100 ETB).
-   * 3. Treated more than 30 days ago (> 30 days): Standard New Patient Registration Fee (150 ETB).
+   * 1. Never treated before (no system visits or historical records): standard New Patient Registration Fee.
+   * 2. Most recent actual hospital visit date was within 30 days (<= 30 days): Recent/Returning Patient Fee.
+   * 3. Most recent actual hospital visit date was more than 30 days ago (> 30 days): Standard Registration Fee.
+   *
+   * Accurately inspects BOTH modern EthioCare HMS visits and imported historical patient records
+   * using the EXACT original treatment date without guessing or overwriting.
    */
   determineRegistrationFee(
     patientId: string,
     services: any[] = [],
-    patientVisits: any[] = []
+    patientVisits: any[] = [],
+    patientHistory: any[] = []
   ): RegistrationFeeResult {
     const tariffs = this.getRegistrationTariffs(services);
 
@@ -101,7 +108,14 @@ export const patientFeeService = {
       return isCompleted;
     });
 
-    if (completedVisits.length === 0) {
+    // Find all historical records for this patient
+    const matchingHistory = patientHistory.filter((h) => {
+      if (!h) return false;
+      return h.patient_id === patientId && Boolean(h.visit_date);
+    });
+
+    // If neither completed system visits nor historical records exist, this is a new patient
+    if (completedVisits.length === 0 && matchingHistory.length === 0) {
       return {
         feeType: 'new_patient',
         fee: tariffs.newPatientFee,
@@ -109,28 +123,54 @@ export const patientFeeService = {
         serviceName: tariffs.newPatientService?.name || 'Patient Registration (New Patient)',
         serviceId: tariffs.newPatientService?.id,
         daysSinceLastVisit: null,
+        lastVisitDate: null,
         isRecent: false,
-        badgeText: 'New Patient',
+        statusText: 'New patient registration',
+        badgeText: 'New Patient Registration',
         badgeVariant: 'default',
       };
     }
 
-    // Determine the most recent completed visit date
+    // Determine the most recent completed hospital visit date across system visits and historical records
     let latestVisitDate: Date | null = null;
+    let latestVisitDateStr: string | null = null;
+    let latestRecordSource: 'system' | 'historical' = 'system';
 
+    // 1. Check system visits
     for (const v of completedVisits) {
       const dateStr = v.visit_date || v.created_at || v.created_date;
       if (!dateStr) continue;
 
       try {
-        const d = typeof dateStr === 'string' ? parseISO(dateStr) : new Date(dateStr);
+        const d = typeof dateStr === 'string' ? parseISO(dateStr.slice(0, 10)) : new Date(dateStr);
         if (isValid(d)) {
           if (!latestVisitDate || d.getTime() > latestVisitDate.getTime()) {
             latestVisitDate = d;
+            latestVisitDateStr = typeof dateStr === 'string' ? dateStr.slice(0, 10) : dateStr.toISOString().slice(0, 10);
+            latestRecordSource = 'system';
           }
         }
       } catch {
-        // ignore
+        // ignore invalid dates
+      }
+    }
+
+    // 2. Check historical records (preserves original historical treatment date)
+    for (const h of matchingHistory) {
+      const dateStr = h.visit_date;
+      if (!dateStr) continue;
+
+      try {
+        const d = typeof dateStr === 'string' ? parseISO(dateStr.slice(0, 10)) : new Date(dateStr);
+        if (isValid(d)) {
+          if (!latestVisitDate || d.getTime() > latestVisitDate.getTime()) {
+            latestVisitDate = d;
+            latestVisitDateStr = typeof dateStr === 'string' ? dateStr.slice(0, 10) : dateStr.toISOString().slice(0, 10);
+            latestRecordSource = 'historical';
+          }
+        }
+      } catch {
+        // ignore invalid dates
       }
     }
 
@@ -142,14 +182,19 @@ export const patientFeeService = {
         serviceName: tariffs.newPatientService?.name || 'Patient Registration (New Patient)',
         serviceId: tariffs.newPatientService?.id,
         daysSinceLastVisit: null,
+        lastVisitDate: null,
         isRecent: false,
-        badgeText: 'New Patient',
+        statusText: 'New patient registration',
+        badgeText: 'New Patient Registration',
         badgeVariant: 'default',
       };
     }
 
     const today = new Date();
-    const daysSince = Math.max(0, differenceInDays(today, latestVisitDate));
+    // Compare date portions
+    const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const latestDateOnly = new Date(latestVisitDate.getFullYear(), latestVisitDate.getMonth(), latestVisitDate.getDate());
+    const daysSince = Math.max(0, differenceInDays(todayDateOnly, latestDateOnly));
 
     if (daysSince <= 30) {
       return {
@@ -161,8 +206,11 @@ export const patientFeeService = {
           'Recent Patient Revisit Fee (≤30 Days)',
         serviceId: tariffs.recentPatientService?.id,
         daysSinceLastVisit: daysSince,
+        lastVisitDate: latestVisitDateStr,
+        lastVisitSource: latestRecordSource,
         isRecent: true,
-        badgeText: `Treated ${daysSince === 0 ? 'Today' : `${daysSince}d ago`} (≤30d discount)`,
+        statusText: 'Visited within 30 days',
+        badgeText: `Visited within 30 days (${daysSince === 0 ? 'Today' : `${daysSince}d ago`})`,
         badgeVariant: 'secondary',
       };
     } else {
@@ -174,8 +222,11 @@ export const patientFeeService = {
           tariffs.newPatientService?.name || 'Patient Registration (New Patient)',
         serviceId: tariffs.newPatientService?.id,
         daysSinceLastVisit: daysSince,
+        lastVisitDate: latestVisitDateStr,
+        lastVisitSource: latestRecordSource,
         isRecent: false,
-        badgeText: `Last treated ${daysSince}d ago (>30d)`,
+        statusText: 'More than 30 days since last visit',
+        badgeText: `More than 30 days since last visit (${daysSince}d ago)`,
         badgeVariant: 'outline',
       };
     }
