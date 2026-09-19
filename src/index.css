@@ -134,14 +134,21 @@
 
 /* ===== Mobile & Performance ===== */
 html {
-  scroll-behavior: smooth;
   min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 body {
   min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
 }
 #root {
   min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 @supports (min-height: 100dvh) {
   html, body, #root {

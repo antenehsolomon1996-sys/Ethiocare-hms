@@ -122,10 +122,20 @@ export default function MobileFloatingNav({ role }) {
   const handleMoreItemClick = (path) => {
     setMoreOpen(false);
     navigate(path);
+    // Guarantee body scroll restoration on mobile navigation drawer close
+    requestAnimationFrame(() => {
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+      document.body.removeAttribute('data-scroll-locked');
+      document.documentElement.style.overflow = '';
+    });
   };
 
   const handleLogout = () => {
     setMoreOpen(false);
+    document.body.style.overflow = '';
+    document.body.style.pointerEvents = '';
+    document.body.removeAttribute('data-scroll-locked');
     ethioCareClient.auth.logout('/login');
   };
 

@@ -24,10 +24,10 @@ assert(!indexCss.includes('.mobile-bottom-nav-spacer'), 'index.css has removed o
 
 // 2. Check PortalLayout for the architectural fix
 const portalLayout = readFileSync(resolve('src/components/layout/PortalLayout.jsx'), 'utf8');
-assert(portalLayout.includes('h-screen h-dvh'), 'PortalLayout outer shell uses h-screen with h-dvh fallback');
-assert(portalLayout.includes('min-h-0 overflow-hidden'), 'PortalLayout content column uses min-h-0 to uncap flex scroll sizing');
+assert(portalLayout.includes('portal-shell min-h-screen min-h-[100dvh]'), 'PortalLayout outer shell uses min-h-screen with min-h-[100dvh] fallback');
+assert(portalLayout.includes('portal-content-wrapper flex-1 min-w-0 flex flex-col'), 'PortalLayout content column uses flex-1 min-w-0 for natural expansion');
 assert(portalLayout.includes('shrink-0'), 'PortalLayout mobile subheader has shrink-0 to prevent compression');
-assert(portalLayout.includes('<main className="flex-1 min-h-0 overflow-y-auto'), 'PortalLayout <main> uses min-h-0 overflow-y-auto');
+assert(portalLayout.includes('<main className="flex-1 flex flex-col'), 'PortalLayout <main> uses flex-1 flex-col in natural document flow');
 assert(!portalLayout.includes('className="mobile-bottom-nav-spacer md:hidden"'), 'PortalLayout removed obsolete mobile-bottom-nav-spacer element');
 assert(portalLayout.includes('<MobileFloatingNav role={role} />'), 'PortalLayout mounts shared <MobileFloatingNav role={role} />');
 

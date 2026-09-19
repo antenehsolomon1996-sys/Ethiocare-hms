@@ -126,6 +126,37 @@ export default function PortalLayout({ role }) {
     }
   }, [location.pathname, role, setTabPath]);
 
+  // Lock background scroll when mobile sidebar drawer is open, and restore when closed
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
+  // Ensure body scroll is always restored when navigating or after modal/drawer close
+  useEffect(() => {
+    setMobileOpen(false);
+    const timer = setTimeout(() => {
+      const hasOpenModal = document.querySelector('[data-state="open"][role="dialog"], [data-state="open"][role="alertdialog"], [role="dialog"][data-state="open"]');
+      if (!hasOpenModal && !mobileOpen && !deleteOpen) {
+        if (document.body.style.overflow === 'hidden') {
+          document.body.style.overflow = '';
+        }
+        if (document.body.style.pointerEvents === 'none') {
+          document.body.style.pointerEvents = '';
+        }
+        document.body.removeAttribute('data-scroll-locked');
+        document.documentElement.style.overflow = '';
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
   // When unauthenticated, render the dedicated portal login page at this exact URL
   if (!user) {
     if (isLoadingAuth) {
@@ -183,7 +214,7 @@ export default function PortalLayout({ role }) {
       <HealthcareBackground />
 
       {/* Desktop sidebar */}
-      <div className="hidden md:block shrink-0">
+      <div className="hidden md:block shrink-0 self-start sticky top-0 h-screen z-40">
         <Sidebar role={role} />
       </div>
 
