@@ -5,7 +5,6 @@ import MobileFloatingNav from './MobileFloatingNav';
 import PortalFooter from './PortalFooter';
 import ThemeToggle from './ThemeToggle';
 import HealthcareBackground from './HealthcareBackground';
-import PullToRefresh from '@/components/common/PullToRefresh';
 import NotificationBell from '@/components/common/NotificationBell';
 import { Menu, Bell, User, Settings, Trash2, ChevronLeft, ShieldAlert, Search, Building2, Pill } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -179,12 +178,12 @@ export default function PortalLayout({ role }) {
   };
 
   return (
-    <div className="flex h-screen h-dvh overflow-hidden bg-background relative">
+    <div className="portal-shell min-h-screen min-h-[100dvh] flex flex-col md:flex-row bg-background relative">
       {/* Moving Ambient Healthcare Background */}
       <HealthcareBackground />
 
       {/* Desktop sidebar */}
-      <div className="hidden md:block">
+      <div className="hidden md:block shrink-0">
         <Sidebar role={role} />
       </div>
 
@@ -198,8 +197,8 @@ export default function PortalLayout({ role }) {
         </div>
       )}
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden relative z-10">
+      {/* Main content wrapper */}
+      <div className="portal-content-wrapper flex-1 min-w-0 flex flex-col min-h-screen min-h-[100dvh] relative z-10">
         {/* Top bar */}
         <header
           className="glass border-b border-border/60 flex items-center justify-between px-3 md:px-5 flex-shrink-0 transition-all z-30 sticky top-0"
@@ -391,31 +390,27 @@ export default function PortalLayout({ role }) {
           </div>
         </div>
 
-        {/* Portal scrollable content container */}
-        <div className="portal-content flex-1 min-h-0 overflow-y-auto overflow-x-hidden scroll-smooth overscroll-y-none flex flex-col">
+        {/* Primary Portal Content Container */}
+        <div className="portal-content flex-1 flex flex-col min-w-0">
           {/* Main page content */}
           <main className="flex-1 flex flex-col p-3.5 sm:p-4 md:p-6 lg:p-8 min-w-0">
-            <PullToRefresh onRefresh={handleRefresh}>
-              <div className="flex flex-col min-h-full flex-1">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={location.pathname}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex-1 flex flex-col min-w-0"
-                  >
-                    <ErrorBoundary title="Portal View Error">
-                      <Outlet />
-                    </ErrorBoundary>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </PullToRefresh>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="flex-1 flex flex-col min-w-0"
+              >
+                <ErrorBoundary title="Portal View Error">
+                  <Outlet />
+                </ErrorBoundary>
+              </motion.div>
+            </AnimatePresence>
           </main>
 
-          {/* Shared Permanent Portal Footer */}
+          {/* Shared Permanent Compact Portal Footer in normal document flow */}
           <PortalFooter role={role} />
         </div>
       </div>
