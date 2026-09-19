@@ -77,7 +77,7 @@ export const roleConfig = {
     icon: Stethoscope,
     items: [
       { path: '/doctor', label: 'Dashboard', icon: LayoutDashboard },
-      { path: '/doctor/patients', label: 'Patients', icon: Users },
+      { path: '/doctor/patients', label: 'Patient Tracking', icon: Users },
       { path: '/doctor/queue', label: 'Appointments / Visits', icon: Clock },
       { path: '/doctor/prescriptions', label: 'Prescriptions', icon: Pill },
       { path: '/doctor/medication-orders', label: 'Medication Orders', icon: Syringe },

@@ -33,7 +33,7 @@ import { ethioCareClient } from '@/api/ethioCareClient';
 const PORTAL_NAV_ITEMS = {
   doctor: [
     { path: '/doctor', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/doctor/patients', label: 'Patients', icon: Users },
+    { path: '/doctor/patients', label: 'Patient Tracking', icon: Users },
     { path: '/doctor/queue', label: 'Visits & Queue', icon: Clock },
     { path: '/doctor/prescriptions', label: 'Prescriptions', icon: ClipboardList },
   ],
