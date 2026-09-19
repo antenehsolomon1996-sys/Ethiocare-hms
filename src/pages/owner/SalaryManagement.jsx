@@ -597,25 +597,21 @@ export default function SalaryManagement() {
               <TableHeader>
                 <TableRow className="bg-muted/40 text-xs">
                   <TableHead>Staff Member</TableHead>
-                  <TableHead>Role &amp; Department</TableHead>
-                  <TableHead>Base Salary</TableHead>
-                  <TableHead>Payday</TableHead>
-                  <TableHead>Disbursed ({selectedPeriod})</TableHead>
-                  <TableHead>Remaining Balance</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Base Salary &amp; Payday</TableHead>
+                  <TableHead>Disbursed &amp; Balance</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingSalaries ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
                       Loading staff salary records...
                     </TableCell>
                   </TableRow>
                 ) : filteredStaff.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
                       No staff members found matching your search.
                     </TableCell>
                   </TableRow>
@@ -629,56 +625,61 @@ export default function SalaryManagement() {
 
                     return (
                       <TableRow key={staff.staff_id} className="text-xs hover:bg-muted/30">
+                        {/* 1. Staff Member */}
                         <TableCell>
                           <div className="font-semibold text-foreground">{staff.employee_name}</div>
-                          <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[140px]">
+                          <div className="text-[11px] text-muted-foreground capitalize">
+                            {staff.role?.replace(/_/g, ' ')} · {staff.department}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[140px]">
                             {staff.bank_name || 'Bank N/A'}
                           </div>
                         </TableCell>
 
-                        <TableCell className="capitalize">
-                          <div className="font-medium text-foreground">{staff.role.replace(/_/g, ' ')}</div>
-                          <div className="text-[11px] text-muted-foreground">{staff.department}</div>
-                        </TableCell>
-
-                        <TableCell className="font-semibold text-foreground">
-                          {Number(staff.base_salary || 0).toLocaleString()} ETB
-                        </TableCell>
-
+                        {/* 2. Base Salary & Payday */}
                         <TableCell>
-                          <Badge variant="outline" className="text-[11px] font-normal">
-                            {staff.payday_of_month || 28}th of month
-                          </Badge>
+                          <div className="font-semibold text-foreground text-sm">
+                            {Number(staff.base_salary || 0).toLocaleString()} ETB
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">
+                            Payday: {staff.payday_of_month || 28}th of month
+                          </span>
                         </TableCell>
 
-                        <TableCell className="font-medium text-emerald-600">
-                          {paidThisPeriod > 0 ? `+${paidThisPeriod.toLocaleString()} ETB` : '0.00 ETB'}
-                        </TableCell>
-
-                        <TableCell className={`font-semibold ${remaining > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                          {remaining.toLocaleString()} ETB
-                        </TableCell>
-
+                        {/* 3. Disbursed & Balance */}
                         <TableCell>
-                          {isFullyPaid ? (
-                            <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 text-[10px]">
-                              Paid in Full
-                            </Badge>
-                          ) : isPartial ? (
-                            <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 text-[10px]">
-                              Partial Paid
-                            </Badge>
-                          ) : staff.base_salary > 0 ? (
-                            <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600 text-[10px]">
-                              Unpaid
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                              Not Configured
-                            </Badge>
-                          )}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-emerald-600 font-semibold text-xs">
+                                {paidThisPeriod > 0 ? `+${paidThisPeriod.toLocaleString()} ETB` : '0 ETB'}
+                              </span>
+                              <span className={`text-[11px] ${remaining > 0 ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
+                                Rem: {remaining.toLocaleString()} ETB
+                              </span>
+                            </div>
+                            <div>
+                              {isFullyPaid ? (
+                                <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 text-[9px] py-0">
+                                  Paid in Full
+                                </Badge>
+                              ) : isPartial ? (
+                                <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-600 text-[9px] py-0">
+                                  Partial Paid
+                                </Badge>
+                              ) : staff.base_salary > 0 ? (
+                                <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-600 text-[9px] py-0">
+                                  Unpaid
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[9px] text-muted-foreground py-0">
+                                  Not Configured
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </TableCell>
 
+                        {/* 4. Actions */}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <Button
@@ -1014,8 +1015,7 @@ export default function SalaryManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40 text-xs">
-                      <TableHead>Date</TableHead>
-                      <TableHead>Period</TableHead>
+                      <TableHead>Date &amp; Period</TableHead>
                       <TableHead>Paid (ETB)</TableHead>
                       <TableHead>Remaining</TableHead>
                       <TableHead>Reference</TableHead>
@@ -1026,8 +1026,10 @@ export default function SalaryManagement() {
                       .filter((p) => p.staff_id === historyStaff?.staff_id)
                       .map((p) => (
                         <TableRow key={p.id} className="text-xs">
-                          <TableCell className="font-mono text-muted-foreground">{p.payment_date}</TableCell>
-                          <TableCell>{p.salary_period}</TableCell>
+                          <TableCell>
+                            <span className="font-mono text-muted-foreground block">{p.payment_date}</span>
+                            <span className="text-[11px] text-foreground font-medium">{p.salary_period}</span>
+                          </TableCell>
                           <TableCell className="font-semibold text-emerald-600">
                             {Number(p.amount_paid).toLocaleString()} ETB
                           </TableCell>

@@ -106,15 +106,29 @@ export default function PrescriptionsList() {
 
   const columns = [
     { header: 'Patient', accessor: 'patient_name' },
-    { header: 'Medicine', accessor: 'medicine_name' },
-    { header: 'Dosage', accessor: 'dosage' },
-    { header: 'Frequency', accessor: 'frequency' },
-    { header: 'Duration', accessor: 'duration' },
-    { header: 'Qty', accessor: 'quantity' },
+    { 
+      header: 'Medicine & Dosage', 
+      cell: (r) => (
+        <div>
+          <p className="font-semibold text-foreground">{r.medicine_name}</p>
+          <p className="text-[11px] text-muted-foreground">{r.dosage || ''} · Qty: {r.quantity || 1}</p>
+        </div>
+      )
+    },
     { header: 'Status', cell: (r) => <StatusBadge status={r.status} /> },
-    { header: 'Action', cell: (r) => r.status === 'pending' ? (
-      <Button size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Dispense</Button>
-    ) : null }
+    { 
+      header: 'Action', 
+      cell: (r) => (
+        <Button 
+          size="sm" 
+          variant={r.status === 'pending' ? 'default' : 'outline'}
+          className="h-8 text-xs" 
+          onClick={(e) => { e.stopPropagation(); setSelected(r); }}
+        >
+          {r.status === 'pending' ? 'Dispense' : 'View'}
+        </Button>
+      ) 
+    }
   ];
 
   return (

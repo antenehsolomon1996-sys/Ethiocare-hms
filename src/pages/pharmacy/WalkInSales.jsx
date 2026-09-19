@@ -638,19 +638,17 @@ export default function WalkInSales() {
                     <table className="w-full text-left text-xs">
                       <thead className="bg-muted/50 border-b uppercase font-semibold text-muted-foreground">
                         <tr>
-                          <th className="p-3">Medicine & Dosage Instructions</th>
-                          <th className="p-3">Batch / Exp</th>
-                          <th className="p-3 text-right">Price</th>
-                          <th className="p-3 text-center w-28">Quantity</th>
-                          <th className="p-3 text-right">Subtotal</th>
-                          <th className="p-3 text-center w-12">Action</th>
+                          <th className="p-3">Medicine & Batch</th>
+                          <th className="p-3 text-right">Unit Price</th>
+                          <th className="p-3 text-center w-32">Quantity</th>
+                          <th className="p-3 text-right">Subtotal & Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
                         {cart.map((item, idx) => (
                           <tr key={idx} className="hover:bg-muted/20">
                             {/* Medicine & Dosage */}
-                            <td className="p-3 space-y-1.5 min-w-[200px]">
+                            <td className="p-3 space-y-1.5 min-w-[180px]">
                               <div className="font-semibold text-sm text-foreground flex items-center gap-1.5">
                                 {item.name}
                                 {medicines.find(m => m.id === item.medicineId)?.prescription_required && (
@@ -658,6 +656,9 @@ export default function WalkInSales() {
                                     Rx
                                   </Badge>
                                 )}
+                              </div>
+                              <div className="font-mono text-[11px] text-muted-foreground">
+                                Batch: {item.batchNumber || 'N/A'} • Exp: {item.expiryDate || 'N/A'}
                               </div>
                               <Input
                                 placeholder={
@@ -673,12 +674,6 @@ export default function WalkInSales() {
                                     : ''
                                 }`}
                               />
-                            </td>
-
-                            {/* Batch & Expiry */}
-                            <td className="p-3 font-mono text-[11px] whitespace-nowrap text-muted-foreground">
-                              <div>{item.batchNumber || 'N/A'}</div>
-                              <div>{item.expiryDate || 'N/A'}</div>
                             </td>
 
                             {/* Price */}
@@ -717,22 +712,22 @@ export default function WalkInSales() {
                               </div>
                             </td>
 
-                            {/* Subtotal */}
-                            <td className="p-3 text-right font-mono font-semibold text-primary whitespace-nowrap">
-                              {item.subtotal.toLocaleString()} ETB
-                            </td>
-
-                            {/* Remove */}
-                            <td className="p-3 text-center">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleRemoveItem(idx)}
-                                className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
+                            {/* Subtotal & Action */}
+                            <td className="p-3 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="font-mono font-semibold text-primary">
+                                  {item.subtotal.toLocaleString()} ETB
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleRemoveItem(idx)}
+                                  className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         ))}

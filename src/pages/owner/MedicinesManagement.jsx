@@ -262,44 +262,57 @@ export default function MedicinesManagement() {
                 <thead className="bg-muted/50 border-b border-border sticky top-0">
                   <tr>
                     <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Medicine</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Category</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Qty</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Price (ETB)</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Expiry</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Status</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Stock &amp; Status</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Price &amp; Expiry</th>
+                    <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(m => (
                     <tr key={m.id} className={`border-b border-border last:border-0 hover:bg-muted/30 transition-colors ${m.archived ? 'opacity-50' : ''}`}>
+                      {/* 1. Medicine */}
                       <td className="px-4 py-3">
-                        <p className="font-semibold">{m.name}</p>
-                        {m.generic_name && <p className="text-xs text-muted-foreground">{m.generic_name}</p>}
-                        {m.prescription_required && <Badge variant="warning" className="text-[10px] mt-0.5">Rx</Badge>}
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-semibold text-foreground">{m.name}</p>
+                          {m.prescription_required && <Badge variant="warning" className="text-[9px] px-1 py-0">Rx</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {m.generic_name ? `${m.generic_name} · ` : ''}{m.category || 'General'}
+                        </p>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{m.category || '-'}</td>
-                      <td className="px-4 py-3 font-medium">{m.quantity} {m.unit}</td>
-                      <td className="px-4 py-3 font-medium">{m.unit_price?.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-xs">
-                        {m.expiry_date ? format(new Date(m.expiry_date), 'MMM yyyy') : '-'}
-                      </td>
-                      <td className="px-4 py-3"><StatusBadge status={m.computedStatus} /></td>
+
+                      {/* 2. Stock & Status */}
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-9 w-9" title="Adjust Stock" onClick={() => {
+                        <div className="space-y-1">
+                          <p className="font-semibold text-xs text-foreground">{m.quantity} {m.unit}</p>
+                          <StatusBadge status={m.computedStatus} />
+                        </div>
+                      </td>
+
+                      {/* 3. Price & Expiry */}
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-xs text-foreground">{m.unit_price?.toLocaleString()} ETB</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Exp: {m.expiry_date ? format(new Date(m.expiry_date), 'MMM yyyy') : '-'}
+                        </p>
+                      </td>
+
+                      {/* 4. Actions */}
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Adjust Stock" onClick={() => {
                             const newQty = prompt(`Adjust stock for ${m.name} (current: ${m.quantity}):`, m.quantity);
                             if (newQty !== null) handleAdjustStock(m, newQty);
                           }}>
                             <Package className="w-3.5 h-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9" title={m.archived ? 'Restore' : 'Archive'} onClick={() => handleArchive(m)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={m.archived ? 'Restore' : 'Archive'} onClick={() => handleArchive(m)}>
                             {m.archived ? <RotateCcw className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9" title="Edit" onClick={() => openEdit(m)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Edit" onClick={() => openEdit(m)}>
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive" title="Delete" onClick={() => setDeleteTarget(m)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Delete" onClick={() => setDeleteTarget(m)}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>

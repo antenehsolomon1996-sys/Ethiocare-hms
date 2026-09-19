@@ -662,29 +662,30 @@ export default function ReceiveStock() {
                     <thead className="text-xs uppercase bg-muted/50 border-b">
                       <tr>
                         <th className="px-4 py-3">Invoice #</th>
-                        <th className="px-4 py-3">Supplier</th>
-                        <th className="px-4 py-3">Received Date</th>
-                        <th className="px-4 py-3">Warehouse</th>
-                        <th className="px-4 py-3 text-right">Items / Qty</th>
-                        <th className="px-4 py-3 text-right">Grand Total</th>
-                        <th className="px-4 py-3">Received By</th>
+                        <th className="px-4 py-3">Supplier & Warehouse</th>
+                        <th className="px-4 py-3 text-right">Items & Total</th>
                         <th className="px-4 py-3 text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {pastInvoices.map((inv) => (
                         <tr key={inv.id} className="hover:bg-muted/30">
-                          <td className="px-4 py-3 font-semibold font-mono">{inv.invoiceNumber}</td>
-                          <td className="px-4 py-3">{inv.supplier}</td>
-                          <td className="px-4 py-3">{formatDateEAT(inv.deliveryDate)}</td>
-                          <td className="px-4 py-3">{inv.warehouseLocation}</td>
+                          <td className="px-4 py-3">
+                            <div className="font-semibold font-mono text-foreground">{inv.invoiceNumber}</div>
+                            <div className="text-xs text-muted-foreground">Rec: {inv.receivedBy || 'Staff'}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-foreground">{inv.supplier}</div>
+                            <div className="text-xs text-muted-foreground">{inv.warehouseLocation} • {formatDateEAT(inv.deliveryDate)}</div>
+                          </td>
                           <td className="px-4 py-3 text-right">
-                            {inv.items?.length || 0} items ({inv.totalQuantity} units)
+                            <div className="font-mono font-semibold text-emerald-600">
+                              {Number(inv.grandTotal).toLocaleString()} ETB
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {inv.items?.length || 0} items ({inv.totalQuantity} units)
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono font-semibold text-emerald-600">
-                            {Number(inv.grandTotal).toLocaleString()} ETB
-                          </td>
-                          <td className="px-4 py-3">{inv.receivedBy}</td>
                           <td className="px-4 py-3 text-center">
                             <Button
                               variant="outline"
@@ -756,25 +757,27 @@ export default function ReceiveStock() {
                 <table className="w-full text-left">
                   <thead className="bg-muted font-semibold">
                     <tr>
-                      <th className="p-2">Item</th>
-                      <th className="p-2">Batch</th>
-                      <th className="p-2">Expiry</th>
+                      <th className="p-2">Item & Batch</th>
                       <th className="p-2 text-right">Qty</th>
-                      <th className="p-2 text-right">Cost Price</th>
-                      <th className="p-2 text-right">Retail Price</th>
+                      <th className="p-2 text-right">Cost & Retail Price</th>
                       <th className="p-2 text-right">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {completedInvoice.items?.map((it, i) => (
                       <tr key={i}>
-                        <td className="p-2 font-medium">{it.name}</td>
-                        <td className="p-2 font-mono">{it.batchNumber}</td>
-                        <td className="p-2">{formatDateEAT(it.expiryDate)}</td>
+                        <td className="p-2">
+                          <div className="font-medium text-foreground">{it.name}</div>
+                          <div className="text-[11px] text-muted-foreground font-mono">
+                            Batch: {it.batchNumber} • Exp: {formatDateEAT(it.expiryDate)}
+                          </div>
+                        </td>
                         <td className="p-2 text-right font-medium">{it.quantity}</td>
-                        <td className="p-2 text-right font-mono">{Number(it.purchasePrice).toFixed(2)} ETB</td>
-                        <td className="p-2 text-right font-mono">{Number(it.sellingPrice).toFixed(2)} ETB</td>
-                        <td className="p-2 text-right font-mono font-medium">
+                        <td className="p-2 text-right font-mono text-xs">
+                          <div>Cost: {Number(it.purchasePrice).toFixed(2)} ETB</div>
+                          <div className="text-muted-foreground">Retail: {Number(it.sellingPrice).toFixed(2)} ETB</div>
+                        </td>
+                        <td className="p-2 text-right font-mono font-medium text-emerald-600">
                           {(Number(it.quantity) * Number(it.purchasePrice)).toFixed(2)} ETB
                         </td>
                       </tr>

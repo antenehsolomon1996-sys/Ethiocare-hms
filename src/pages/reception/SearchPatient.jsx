@@ -79,9 +79,15 @@ export default function SearchPatient() {
   };
 
   const columns = [
-    { header: 'Patient ID', accessor: 'patient_id' },
-    { header: 'Name', accessor: 'full_name' },
-    { header: 'Gender', accessor: 'gender' },
+    { 
+      header: 'Patient', 
+      cell: (r) => (
+        <div>
+          <p className="font-semibold text-foreground">{r.full_name}</p>
+          <span className="text-[11px] font-mono text-muted-foreground">{r.patient_id || 'ID Pending'}</span>
+        </div>
+      )
+    },
     { header: 'Phone', accessor: 'phone' },
     { header: 'Status', cell: (r) => <StatusBadge status={r.status || 'active'} /> },
     { header: 'Action', cell: (r) => <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>View / Send</Button> }

@@ -232,48 +232,50 @@ export default function RoomBedManagement() {
     }
   };
 
-  // Rooms Columns
+  // Rooms Columns (Strictly 4 Primary Columns)
   const roomColumns = [
-    { header: 'Room No.', cell: (r) => <span className="font-bold text-foreground">Room {r.room_number}</span> },
-    { header: 'Type', cell: (r) => <span className="capitalize">{r.room_type?.replace(/_/g, ' ')}</span> },
-    { header: 'Department', accessor: 'department' },
-    { header: 'Floor', accessor: 'floor' },
     { 
-      header: 'Workspace Policy', 
+      header: 'Room', 
       cell: (r) => (
-        <Badge variant={r.is_exclusive !== false ? 'secondary' : 'outline'} className="text-[11px]">
-          {r.is_exclusive !== false ? 'Exclusive (Single Staff)' : 'Shared (Multi Staff)'}
-        </Badge>
+        <div>
+          <span className="font-bold text-foreground">Room {r.room_number}</span>
+          <p className="text-[11px] text-muted-foreground">{r.department} · Fl {r.floor || 1}</p>
+        </div>
+      ) 
+    },
+    { 
+      header: 'Type & Policy', 
+      cell: (r) => (
+        <div className="space-y-1">
+          <span className="capitalize text-xs font-medium block">{r.room_type?.replace(/_/g, ' ')}</span>
+          <Badge variant={r.is_exclusive !== false ? 'secondary' : 'outline'} className="text-[10px]">
+            {r.is_exclusive !== false ? 'Exclusive' : 'Shared'}
+          </Badge>
+        </div>
       )
     },
     { 
-      header: 'Assigned Staff', 
+      header: 'Staff & Rate', 
       cell: (r) => {
         const assigned = staff.find(s => String(s.assigned_room_id) === String(r.id) && s.status === 'active');
-        if (assigned) {
-          return (
-            <span className="text-xs font-semibold text-primary flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              {assigned.full_name} ({assigned.role})
-            </span>
-          );
-        }
-        return <span className="text-xs text-muted-foreground italic">None (Available)</span>;
+        return (
+          <div>
+            <p className="font-mono font-bold text-xs text-primary">{r.daily_rate} ETB/day</p>
+            {assigned ? (
+              <span className="text-[11px] text-muted-foreground truncate block max-w-[130px]" title={assigned.full_name}>
+                👤 {assigned.full_name}
+              </span>
+            ) : (
+              <span className="text-[11px] text-muted-foreground italic">Unassigned</span>
+            )}
+          </div>
+        );
       }
-    },
-    { header: 'Daily Rate (ETB)', cell: (r) => <span className="font-mono font-bold text-primary">{r.daily_rate} ETB</span> },
-    { header: 'Status', cell: (r) => <StatusBadge status={r.status} /> },
-    { 
-      header: 'Beds', 
-      cell: (r) => {
-        const count = beds.filter(b => String(b.room_id) === String(r.id)).length;
-        return <Badge variant="outline">{count} registered</Badge>;
-      } 
     },
     {
       header: 'Actions',
       cell: (r) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 justify-end">
           <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleOpenRoomModal(r)}>
             <Pencil className="w-3.5 h-3.5" />
           </Button>
@@ -285,21 +287,25 @@ export default function RoomBedManagement() {
     }
   ];
 
-  // Beds Columns
+  // Beds Columns (Strictly 4 Primary Columns)
   const bedColumns = [
-    { header: 'Bed Label / ID', accessor: 'bed_label' },
     { 
-      header: 'Room', 
+      header: 'Bed & Room', 
       cell: (b) => {
         const r = rooms.find(room => String(room.id) === String(b.room_id));
-        return <span>{r ? `Room ${r.room_number} (${r.department})` : 'Unknown'}</span>;
+        return (
+          <div>
+            <span className="font-semibold text-foreground">{b.bed_label || `Bed ${b.bed_number}`}</span>
+            <p className="text-[11px] text-muted-foreground">{r ? `Room ${r.room_number}` : 'No Room'}</p>
+          </div>
+        );
       }
     },
     { 
       header: 'Current Status', 
       cell: (b) => (
         <Select value={b.status} onValueChange={(val) => handleUpdateBedStatus(b.id, val)}>
-          <SelectTrigger className="h-7 w-32 text-xs">
+          <SelectTrigger className="h-7 w-28 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -316,7 +322,7 @@ export default function RoomBedManagement() {
       header: 'Occupant', 
       cell: (b) => (
         b.current_patient_name ? (
-          <span className="font-semibold text-purple-700 dark:text-purple-300 text-xs">
+          <span className="font-semibold text-purple-700 dark:text-purple-300 text-xs truncate max-w-[130px] block">
             {b.current_patient_name}
           </span>
         ) : (
@@ -327,7 +333,7 @@ export default function RoomBedManagement() {
     {
       header: 'Actions',
       cell: (b) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 justify-end">
           <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleOpenBedModal(b)}>
             <Pencil className="w-3.5 h-3.5" />
           </Button>
@@ -339,13 +345,29 @@ export default function RoomBedManagement() {
     }
   ];
 
-  // Assignments Columns
+  // Assignments Columns (Strictly 4 Primary Columns)
   const assignmentColumns = [
     { header: 'Patient', accessor: 'patient_name' },
-    { header: 'Admission Date', cell: (a) => format(new Date(a.admission_date || a.created_at), 'yyyy-MM-dd HH:mm') },
-    { header: 'Discharge Date', cell: (a) => a.discharge_date ? format(new Date(a.discharge_date), 'yyyy-MM-dd HH:mm') : <span className="text-purple-600 font-semibold">Active Stay</span> },
-    { header: 'Rate (ETB)', accessor: 'daily_rate' },
-    { header: 'Payment Status', cell: (a) => <StatusBadge status={a.payment_status} /> },
+    { 
+      header: 'Stay Period', 
+      cell: (a) => (
+        <div className="text-xs">
+          <p>{format(new Date(a.admission_date || a.created_at), 'MMM d, yyyy')}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {a.discharge_date ? `To: ${format(new Date(a.discharge_date), 'MMM d, yyyy')}` : 'Active Stay'}
+          </p>
+        </div>
+      )
+    },
+    { 
+      header: 'Rate & Payment', 
+      cell: (a) => (
+        <div>
+          <span className="font-semibold text-xs">{a.daily_rate} ETB</span>
+          <div className="mt-0.5"><StatusBadge status={a.payment_status} /></div>
+        </div>
+      )
+    },
     { header: 'Status', cell: (a) => <StatusBadge status={a.status} /> },
   ];
 

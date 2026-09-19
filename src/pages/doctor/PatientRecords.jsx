@@ -47,11 +47,30 @@ export default function PatientRecords() {
   const pVitals = selected ? vitals.filter(v => v.patient_id === selected.id) : [];
 
   const columns = [
-    { header: 'Patient ID', accessor: 'patient_id' },
-    { header: 'Name', accessor: 'full_name' },
-    { header: 'Gender', accessor: 'gender' },
-    { header: 'Age', accessor: 'age' },
+    { 
+      header: 'Patient', 
+      cell: (r) => (
+        <div>
+          <p className="font-semibold text-foreground">{r.full_name}</p>
+          <span className="text-[11px] font-mono text-muted-foreground">{r.patient_id}</span>
+        </div>
+      )
+    },
+    { 
+      header: 'Demographics', 
+      cell: (r) => (
+        <span className="capitalize">{r.gender || '-'} · {r.age ? `${r.age} yrs` : '-'}</span>
+      )
+    },
     { header: 'Phone', accessor: 'phone' },
+    { 
+      header: 'Action', 
+      cell: (r) => (
+        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>
+          View Record
+        </Button>
+      )
+    }
   ];
 
   return (

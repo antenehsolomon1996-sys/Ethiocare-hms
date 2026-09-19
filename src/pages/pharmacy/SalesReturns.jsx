@@ -262,16 +262,13 @@ export default function SalesReturns() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 overflow-x-auto">
-                  <table className="w-full text-xs text-left min-w-[800px]">
+                  <table className="w-full text-xs text-left">
                     <thead className="bg-muted/60 uppercase font-semibold text-muted-foreground border-b">
                       <tr>
-                        <th className="p-3">Medicine Name</th>
-                        <th className="p-3 text-right">Sold / Returned</th>
-                        <th className="p-3 text-center w-28">Return Qty</th>
-                        <th className="p-3 text-right">Unit Refund</th>
-                        <th className="p-3 text-right">Refund Subtotal</th>
-                        <th className="p-3">Return Reason</th>
-                        <th className="p-3 text-center">Restock to Inventory?</th>
+                        <th className="p-3">Medicine & Batch</th>
+                        <th className="p-3 text-center">Return Qty</th>
+                        <th className="p-3 text-right">Refund Amount</th>
+                        <th className="p-3">Reason & Restock</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -289,18 +286,17 @@ export default function SalesReturns() {
                                 {item.batchNumber ? `Batch: ${item.batchNumber}` : ''}
                                 {item.expiryDate ? ` · Exp: ${item.expiryDate}` : ''}
                               </div>
-                            </td>
-
-                            <td className="p-3 text-right">
-                              <span className="font-semibold">{item.soldQuantity} sold</span>
-                              {item.previouslyReturnedQuantity > 0 && (
-                                <span className="text-destructive block text-[10px]">
-                                  ({item.previouslyReturnedQuantity} already returned)
+                              <div className="text-[10px] mt-0.5">
+                                <span className="text-muted-foreground">{item.soldQuantity} sold</span>
+                                {item.previouslyReturnedQuantity > 0 && (
+                                  <span className="text-destructive ml-1">
+                                    ({item.previouslyReturnedQuantity} ret.)
+                                  </span>
+                                )}
+                                <span className="text-emerald-600 font-medium ml-1">
+                                  (Max: {maxReturnable})
                                 </span>
-                              )}
-                              <span className="text-emerald-600 block text-[11px] font-medium">
-                                Max returnable: {maxReturnable}
-                              </span>
+                              </div>
                             </td>
 
                             <td className="p-3 text-center">
@@ -315,44 +311,44 @@ export default function SalesReturns() {
                               />
                             </td>
 
-                            <td className="p-3 text-right font-mono font-medium">
-                              {item.unitPrice.toLocaleString()} ETB
-                            </td>
-
-                            <td className="p-3 text-right font-mono font-bold text-primary">
-                              {(item.returnQuantity * item.unitPrice).toLocaleString()} ETB
+                            <td className="p-3 text-right font-mono">
+                              <div className="font-bold text-primary">
+                                {(item.returnQuantity * item.unitPrice).toLocaleString()} ETB
+                              </div>
+                              <div className="text-[11px] text-muted-foreground">
+                                @ {item.unitPrice.toLocaleString()} ETB
+                              </div>
                             </td>
 
                             <td className="p-3">
-                              <Select
-                                disabled={item.returnQuantity === 0}
-                                value={item.reason}
-                                onValueChange={val => handleReasonChange(idx, val)}
-                              >
-                                <SelectTrigger className="h-8 text-xs w-44">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="customer_mistake">Wrong Medicine Selected</SelectItem>
-                                  <SelectItem value="prescriber_change">Doctor Changed Prescription</SelectItem>
-                                  <SelectItem value="defective">Defective / Damaged Package</SelectItem>
-                                  <SelectItem value="expired">Near Expiry / Expired</SelectItem>
-                                  <SelectItem value="adverse_reaction">Adverse Patient Reaction</SelectItem>
-                                  <SelectItem value="other">Other Customer Return</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </td>
-
-                            <td className="p-3 text-center">
-                              <div className="flex flex-col items-center justify-center gap-1">
-                                <Switch
+                              <div className="flex flex-col gap-1.5 min-w-[140px]">
+                                <Select
                                   disabled={item.returnQuantity === 0}
-                                  checked={item.restockable}
-                                  onCheckedChange={checked => handleToggleRestockable(idx, checked)}
-                                />
-                                <span className="text-[10px] text-muted-foreground">
-                                  {item.restockable ? 'Restock (+Qty)' : 'Quarantine'}
-                                </span>
+                                  value={item.reason}
+                                  onValueChange={val => handleReasonChange(idx, val)}
+                                >
+                                  <SelectTrigger className="h-7 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="customer_mistake">Wrong Medicine</SelectItem>
+                                    <SelectItem value="prescriber_change">Prescription Changed</SelectItem>
+                                    <SelectItem value="defective">Defective / Damaged</SelectItem>
+                                    <SelectItem value="expired">Near Expiry / Expired</SelectItem>
+                                    <SelectItem value="adverse_reaction">Adverse Reaction</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <div className="flex items-center gap-1.5">
+                                  <Switch
+                                    disabled={item.returnQuantity === 0}
+                                    checked={item.restockable}
+                                    onCheckedChange={checked => handleToggleRestockable(idx, checked)}
+                                  />
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {item.restockable ? 'Restock' : 'Quarantine'}
+                                  </span>
+                                </div>
                               </div>
                             </td>
                           </tr>
@@ -436,30 +432,33 @@ export default function SalesReturns() {
                   <table className="w-full text-xs text-left">
                     <thead className="bg-muted/50 border-b uppercase font-semibold text-muted-foreground">
                       <tr>
-                        <th className="p-3">Return #</th>
-                        <th className="p-3">Date</th>
-                        <th className="p-3">Receipt Ref</th>
-                        <th className="p-3">Customer</th>
-                        <th className="p-3">Returned Items</th>
-                        <th className="p-3 text-right">Refund Issued</th>
-                        <th className="p-3">Processed By</th>
+                        <th className="p-3">Return # & Date</th>
+                        <th className="p-3">Receipt & Customer</th>
+                        <th className="p-3 text-right">Refund & Items</th>
                         <th className="p-3 text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {pastReturns.map(ret => (
                         <tr key={ret.id} className="hover:bg-muted/30">
-                          <td className="p-3 font-mono font-semibold text-foreground">{ret.returnNumber}</td>
-                          <td className="p-3 text-muted-foreground">{formatDateEAT(ret.createdAt)}</td>
-                          <td className="p-3 font-mono text-primary">{ret.receiptNumber}</td>
-                          <td className="p-3 font-medium">{ret.customerName}</td>
                           <td className="p-3">
-                            {ret.items?.map(it => `${it.name} (x${it.returnQuantity})`).join(', ')}
+                            <div className="font-mono font-semibold text-foreground">{ret.returnNumber}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {formatDateEAT(ret.createdAt)} • By {ret.processedBy}
+                            </div>
                           </td>
-                          <td className="p-3 text-right font-mono font-bold text-emerald-600">
-                            {Number(ret.refundAmount).toLocaleString()} ETB
+                          <td className="p-3">
+                            <div className="font-mono text-primary font-medium">{ret.receiptNumber}</div>
+                            <div className="text-foreground">{ret.customerName}</div>
                           </td>
-                          <td className="p-3 text-muted-foreground">{ret.processedBy}</td>
+                          <td className="p-3 text-right">
+                            <div className="font-mono font-bold text-emerald-600">
+                              {Number(ret.refundAmount).toLocaleString()} ETB
+                            </div>
+                            <div className="text-[11px] text-muted-foreground truncate max-w-[200px] ml-auto" title={ret.items?.map(it => `${it.name} (x${it.returnQuantity})`).join(', ')}>
+                              {ret.items?.map(it => `${it.name} (x${it.returnQuantity})`).join(', ')}
+                            </div>
+                          </td>
                           <td className="p-3 text-center">
                             <Button
                               variant="outline"
@@ -468,7 +467,7 @@ export default function SalesReturns() {
                               className="h-7 text-xs"
                             >
                               <Printer className="w-3.5 h-3.5 mr-1" />
-                              Credit Voucher
+                              Voucher
                             </Button>
                           </td>
                         </tr>

@@ -259,41 +259,52 @@ export default function Inventory() {
                     <thead className="bg-muted/50 border-b border-border sticky top-0">
                       <tr>
                         <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Medicine</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Category</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Stock</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Price (ETB)</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Expiry</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Status</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Stock &amp; Status</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Price &amp; Expiry</th>
+                        <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.map((m) => (
                         <tr key={m.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                          {/* 1. Medicine */}
                           <td className="px-4 py-3">
-                            <p className="font-semibold">{m.name}</p>
-                            {m.generic_name && <p className="text-xs text-muted-foreground">{m.generic_name}</p>}
-                            {m.strength && <p className="text-xs text-muted-foreground">{m.strength} · {m.dosage_form}</p>}
+                            <p className="font-semibold text-foreground text-sm">{m.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {m.generic_name ? `${m.generic_name} · ` : ''}{m.category || 'General'}
+                              {m.strength ? ` (${m.strength})` : ''}
+                            </p>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs">{m.category || '-'}</td>
+
+                          {/* 2. Stock & Status */}
                           <td className="px-4 py-3">
-                            <p className="font-medium">{m.quantity} {m.unit}</p>
-                            <p className="text-xs text-muted-foreground">Min: {m.min_stock || 10}</p>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-xs text-foreground">{m.quantity} {m.unit}</span>
+                                <span className="text-[10px] text-muted-foreground">(Min: {m.min_stock || 10})</span>
+                              </div>
+                              <StatusBadge status={m.computedStatus} />
+                            </div>
                           </td>
-                          <td className="px-4 py-3 font-medium">{m.unit_price?.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-xs">
-                            {m.expiry_date ? formatDateEAT(m.expiry_date) : '-'}
-                          </td>
-                          <td className="px-4 py-3"><StatusBadge status={m.computedStatus} /></td>
+
+                          {/* 3. Price & Expiry */}
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="icon" className="h-9 w-9" title="Stock In" onClick={() => openStockAdjust(m, 'add')}>
+                            <p className="font-medium text-xs text-foreground">{m.unit_price?.toLocaleString()} ETB</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Exp: {m.expiry_date ? formatDateEAT(m.expiry_date) : '-'}
+                            </p>
+                          </td>
+
+                          {/* 4. Actions */}
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Stock In" onClick={() => openStockAdjust(m, 'add')}>
                                 <Plus className="w-3.5 h-3.5 text-emerald-600" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-9 w-9" title="Stock Out" onClick={() => openStockAdjust(m, 'remove')}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Stock Out" onClick={() => openStockAdjust(m, 'remove')}>
                                 <Minus className="w-3.5 h-3.5 text-red-600" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-9 w-9" title="Set Stock" onClick={() => openStockAdjust(m, 'set')}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Set Stock" onClick={() => openStockAdjust(m, 'set')}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
                             </div>
@@ -380,14 +391,10 @@ export default function Inventory() {
                 <table className="w-full text-xs text-left">
                   <thead className="bg-muted/50 border-b border-border uppercase font-semibold text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-3">Timestamp (EAT)</th>
-                      <th className="px-4 py-3">Type</th>
+                      <th className="px-4 py-3">Timestamp &amp; Type</th>
                       <th className="px-4 py-3">Medicine</th>
-                      <th className="px-4 py-3">Batch / Expiry</th>
                       <th className="px-4 py-3 text-right">Quantity</th>
-                      <th className="px-4 py-3">Reference</th>
-                      <th className="px-4 py-3">Performed By</th>
-                      <th className="px-4 py-3">Notes</th>
+                      <th className="px-4 py-3">Audit Details</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -395,41 +402,47 @@ export default function Inventory() {
                       const isInbound = ['STOCK_IN', 'RETURN_IN', 'ADJUSTMENT_IN', 'TRANSFER_IN'].includes(m.movementType);
                       return (
                         <tr key={m.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                            {formatDateTimeEAT(m.performedAt)}
+                          {/* 1. Timestamp & Type */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-muted-foreground block text-xs">
+                              {formatDateTimeEAT(m.performedAt)}
+                            </span>
+                            <div className="mt-1">
+                              <Badge
+                                variant="outline"
+                                className={`text-[9px] font-mono font-bold py-0 ${
+                                  isInbound
+                                    ? 'text-emerald-700 border-emerald-300 bg-emerald-50/50'
+                                    : 'text-amber-700 border-amber-300 bg-amber-50/50'
+                                }`}
+                              >
+                                {m.movementType}
+                              </Badge>
+                            </div>
                           </td>
+
+                          {/* 2. Medicine */}
                           <td className="px-4 py-3">
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] font-mono font-bold ${
-                                isInbound
-                                  ? 'text-emerald-700 border-emerald-300 bg-emerald-50/50'
-                                  : 'text-amber-700 border-amber-300 bg-amber-50/50'
-                              }`}
-                            >
-                              {m.movementType}
-                            </Badge>
+                            <p className="font-semibold text-foreground text-xs">{m.medicineName}</p>
+                            <span className="text-[11px] text-muted-foreground font-mono block">
+                              {m.batchNumber ? `B: ${m.batchNumber}` : ''}
+                              {m.expiryDate ? ` · Exp: ${formatDateEAT(m.expiryDate)}` : ''}
+                            </span>
                           </td>
-                          <td className="px-4 py-3 font-medium text-foreground">
-                            {m.medicineName}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground font-mono">
-                            {m.batchNumber || '-'}
-                            {m.expiryDate && <span className="text-[10px] block">Exp: {formatDateEAT(m.expiryDate)}</span>}
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono font-bold text-sm">
+
+                          {/* 3. Quantity */}
+                          <td className="px-4 py-3 text-right font-mono font-bold text-sm whitespace-nowrap">
                             <span className={isInbound ? 'text-emerald-600' : 'text-amber-600'}>
                               {isInbound ? '+' : '-'}{m.quantity}
                             </span>
                           </td>
-                          <td className="px-4 py-3 font-mono text-muted-foreground">
-                            {m.referenceId || '-'}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {m.performedBy}
-                          </td>
-                          <td className="px-4 py-3 max-w-xs truncate text-muted-foreground" title={m.notes}>
-                            {m.notes || '-'}
+
+                          {/* 4. Audit Details */}
+                          <td className="px-4 py-3">
+                            <p className="text-xs font-medium text-foreground">{m.performedBy || 'Staff'}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono truncate max-w-[140px]" title={m.referenceId || m.notes}>
+                              {m.referenceId ? `Ref: ${m.referenceId}` : (m.notes || 'Routine')}
+                            </p>
                           </td>
                         </tr>
                       );

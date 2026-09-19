@@ -284,52 +284,50 @@ export default function SalesHistory() {
               <table className="w-full text-xs text-left">
                 <thead className="bg-muted/50 uppercase font-semibold text-muted-foreground border-b">
                   <tr>
-                    <th className="p-3">Receipt #</th>
-                    <th className="p-3">Date & Time (EAT)</th>
+                    <th className="p-3">Receipt & Time</th>
                     <th className="p-3">Customer Profile</th>
-                    <th className="p-3">Items Summary</th>
-                    <th className="p-3">Method</th>
-                    <th className="p-3 text-right">Total Amount</th>
-                    <th className="p-3">Cashier</th>
+                    <th className="p-3 text-right">Total & Method</th>
                     <th className="p-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {filteredSales.map((sale) => {
                     const itemCount = sale.items?.length || 0;
-                    const itemsPreview = sale.items?.map(it => it.name).slice(0, 2).join(', ') + (itemCount > 2 ? ` +${itemCount - 2} more` : '');
                     return (
                       <tr key={sale.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="p-3 font-mono font-semibold text-foreground">
-                          {sale.receiptNumber}
-                        </td>
-                        <td className="p-3 text-muted-foreground whitespace-nowrap">
-                          {formatDateTimeEAT(sale.createdAt)}
+                        <td className="p-3">
+                          <div className="font-mono font-semibold text-foreground">
+                            {sale.receiptNumber}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground whitespace-nowrap">
+                            {formatDateTimeEAT(sale.createdAt)}
+                          </div>
                         </td>
                         <td className="p-3">
                           <div className="font-medium text-foreground">{sale.customerName || 'Walk-In Customer'}</div>
-                          <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-1.5 mt-0.5">
                             {sale.customerPhone && <span>{sale.customerPhone}</span>}
                             {sale.customerCategory && (
                               <Badge variant="outline" className="text-[9px] px-1 py-0">
                                 {sale.customerCategory}
                               </Badge>
                             )}
+                            <span className="text-muted-foreground/75">({itemCount} items)</span>
                           </div>
                         </td>
-                        <td className="p-3 max-w-xs truncate" title={sale.items?.map(i => `${i.name} (x${i.quantity})`).join(', ')}>
-                          <span className="font-medium">{itemsPreview}</span>
-                          <span className="text-muted-foreground text-[10px] block">({itemCount} items)</span>
+                        <td className="p-3 text-right whitespace-nowrap">
+                          <div className="font-mono font-bold text-sm text-foreground">
+                            {Number(sale.total).toLocaleString()} ETB
+                          </div>
+                          <div className="flex items-center justify-end gap-1 text-[11px] text-muted-foreground mt-0.5">
+                            <Badge variant="secondary" className="capitalize text-[9px] px-1 py-0">
+                              {sale.paymentMethod?.replace(/_/g, ' ')}
+                            </Badge>
+                            {sale.cashierName && (
+                              <span className="truncate max-w-[90px]">{sale.cashierName}</span>
+                            )}
+                          </div>
                         </td>
-                        <td className="p-3 whitespace-nowrap">
-                          <Badge variant="secondary" className="capitalize text-[10px]">
-                            {sale.paymentMethod?.replace(/_/g, ' ')}
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-right font-mono font-bold text-sm text-foreground whitespace-nowrap">
-                          {Number(sale.total).toLocaleString()} ETB
-                        </td>
-                        <td className="p-3 text-muted-foreground">{sale.cashierName}</td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <Button

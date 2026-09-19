@@ -594,12 +594,8 @@ export default function MedicationOrdersBilling() {
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Patient</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Medication</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Doctor</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Date / Time</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Amount</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-center">Payment Status</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-center">Order Status</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Actions</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right w-[180px]">Amount &amp; Status</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right w-[160px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -618,7 +614,7 @@ export default function MedicationOrdersBilling() {
                         className="hover:bg-muted/30 transition-colors cursor-pointer"
                         onClick={() => setDetailOrder(order)}
                       >
-                        {/* Patient */}
+                        {/* 1. Patient */}
                         <TableCell>
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-xs">
@@ -635,80 +631,46 @@ export default function MedicationOrdersBilling() {
                           </div>
                         </TableCell>
 
-                        {/* Medication */}
+                        {/* 2. Medication */}
                         <TableCell>
                           <div className="flex items-start gap-2">
                             <Icon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                             <div className="min-w-0">
                               <p className="font-medium text-sm text-foreground">{order.item_name}</p>
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
                                 {order.dosage && <span>{order.dosage}</span>}
-                                {order.frequency && <span>· {order.frequency}</span>}
                                 {order.quantity && <span>· Qty: {order.quantity}</span>}
+                                {order.doctor_name && <span>· Dr. {order.doctor_name}</span>}
                               </div>
                             </div>
                           </div>
                         </TableCell>
 
-                        {/* Prescribing Doctor */}
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Stethoscope className="w-3.5 h-3.5 text-primary/70 shrink-0" />
-                            <span className="truncate">{order.doctor_name ? `Dr. ${order.doctor_name}` : 'Attending MD'}</span>
-                          </div>
-                        </TableCell>
-
-                        {/* Date / Time */}
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                            <Calendar className="w-3.5 h-3.5 opacity-60" />
-                            <span>{formattedDate}</span>
-                          </div>
-                        </TableCell>
-
-                        {/* Amount */}
+                        {/* 3. Amount & Status */}
                         <TableCell className="text-right">
-                          <span className="font-bold text-sm font-heading text-foreground">
+                          <span className="font-bold text-sm font-heading text-foreground block">
                             {amountNum.toLocaleString()} ETB
                           </span>
+                          <div className="flex justify-end mt-1">
+                            {order.payment_status === 'paid' ? (
+                              <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] py-0">
+                                Paid
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[10px] py-0">
+                                Pending
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
 
-                        {/* Payment Status */}
-                        <TableCell className="text-center whitespace-nowrap">
-                          {order.payment_status === 'paid' && (
-                            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                              Paid
-                            </Badge>
-                          )}
-                          {(order.payment_status === 'pending_payment' || order.payment_status === 'pending') && (
-                            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                              Pending Payment
-                            </Badge>
-                          )}
-                          {order.payment_status === 'waived' && (
-                            <Badge className="bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
-                              Waived
-                            </Badge>
-                          )}
-                          {order.payment_status === 'cancelled' && (
-                            <Badge className="bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30">
-                              Cancelled
-                            </Badge>
-                          )}
-                        </TableCell>
-
-                        {/* Order / Admin Status */}
-                        <TableCell className="text-center whitespace-nowrap">
-                          <StatusBadge status={order.administration_status || 'awaiting_payment'} />
-                        </TableCell>
-
-                        {/* Actions */}
+                        {/* 4. Actions */}
                         <TableCell className="text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
                             {(order.payment_status === 'pending_payment' || order.payment_status === 'pending') ? (
                               <Button
                                 size="sm"
-                                className="h-8 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                                className="h-8 px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
                                 onClick={() => handleOpenPayment(order)}
                               >
                                 <DollarSign className="w-3.5 h-3.5 mr-1" />
@@ -718,7 +680,7 @@ export default function MedicationOrdersBilling() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 px-2.5 text-xs border-border/60 hover:bg-muted/50"
+                                className="h-8 px-2 text-xs border-border/60 hover:bg-muted/50"
                                 onClick={() =>
                                   setActiveReceipt({
                                     receipt_number: order.receipt_number || `RCP-MED-${order.id.slice(0, 6)}`,
@@ -728,7 +690,7 @@ export default function MedicationOrdersBilling() {
                                     paid_date: order.paid_date || format(new Date(), 'yyyy-MM-dd'),
                                     cashier_name: order.paid_by || 'Hospital Cashier',
                                     payment_method: order.payment_method || 'cash',
-                                    payment_type: 'medicine'
+                                    payment_type: 'pharmacy'
                                   })
                                 }
                               >
@@ -742,7 +704,7 @@ export default function MedicationOrdersBilling() {
                               variant="ghost"
                               className="h-8 w-8 p-0"
                               onClick={() => setDetailOrder(order)}
-                              title="View full details"
+                              title="View details"
                             >
                               <Eye className="w-4 h-4 text-muted-foreground" />
                             </Button>

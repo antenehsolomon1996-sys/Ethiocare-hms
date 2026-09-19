@@ -9,10 +9,34 @@ export default function LabResults() {
 
   const columns = [
     { header: 'Patient', accessor: 'patient_name' },
-    { header: 'Test', cell: (r) => `${r.test_type}${r.test_name ? ` - ${r.test_name}` : ''}` },
-    { header: 'Results', cell: (r) => <span className="truncate max-w-[250px] block text-sm">{r.results}</span> },
-    { header: 'Doctor', accessor: 'doctor_name' },
-    { header: 'Completed', cell: (r) => r.completed_date ? format(new Date(r.completed_date), 'MMM d, yyyy') : '-' },
+    { 
+      header: 'Diagnostic Test', 
+      cell: (r) => (
+        <div>
+          <p className="font-semibold text-foreground text-xs">{r.test_name || r.test_type}</p>
+          <span className="text-[11px] text-muted-foreground">{r.test_type}</span>
+        </div>
+      ) 
+    },
+    { 
+      header: 'Results Summary', 
+      cell: (r) => (
+        <span className="truncate max-w-[200px] block text-xs font-mono bg-muted/50 px-2 py-1 rounded">
+          {r.results || 'No detailed text'}
+        </span>
+      ) 
+    },
+    { 
+      header: 'Doctor & Date', 
+      cell: (r) => (
+        <div>
+          <p className="text-xs font-medium text-foreground">Dr. {r.doctor_name || 'Staff'}</p>
+          <span className="text-[10px] text-muted-foreground">
+            {r.completed_date ? format(new Date(r.completed_date), 'MMM d, yyyy') : '-'}
+          </span>
+        </div>
+      ) 
+    },
   ];
 
   return (

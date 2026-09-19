@@ -95,7 +95,7 @@ export default function NurseTasks() {
         const bedInfo = getBedInfo(r.patient_id, r.visit_id);
         return (
           <div>
-            <p className="font-semibold text-sm">{r.patient_name}</p>
+            <p className="font-semibold text-sm text-foreground">{r.patient_name}</p>
             {bedInfo ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800 mt-0.5">
                 🏨 {bedInfo}
@@ -107,22 +107,22 @@ export default function NurseTasks() {
         );
       }
     },
-    { header: 'Task', cell: (r) => <span className="capitalize">{r.task_type?.replace('_', ' ')}</span> },
-    { header: 'Description', accessor: 'description' },
-    { header: 'Doctor', accessor: 'doctor_name' },
     { 
-      header: 'Assigned Nurse', 
+      header: 'Task & Doctor', 
       cell: (r) => (
-        <span className="text-xs">
-          {r.assigned_nurse_name || <span className="text-muted-foreground italic">Unassigned (Ward)</span>}
-        </span>
+        <div>
+          <span className="capitalize font-medium text-sm text-foreground block">{r.task_type?.replace(/_/g, ' ')}</span>
+          <p className="text-[11px] text-muted-foreground truncate max-w-xs">
+            {r.doctor_name ? `Dr. ${r.doctor_name}` : ''} {r.instructions ? `· ${r.instructions}` : (r.description ? `· ${r.description}` : '')}
+          </p>
+        </div>
       )
     },
     { header: 'Status', cell: (r) => <StatusBadge status={r.status} /> },
     { header: 'Action', cell: (r) => {
       if (r.status === 'pending') return <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleStart(r); }}>Start</Button>;
       if (r.status === 'in_progress') return <Button size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); setNotes(r.notes || ''); }}>Complete</Button>;
-      return <span className="text-xs text-emerald-600">Done</span>;
+      return <span className="text-xs text-emerald-600 font-semibold">Done</span>;
     }}
   ];
 

@@ -430,18 +430,21 @@ export default function PharmacyReports() {
             <table className="w-full text-xs text-left">
               <thead className="bg-muted/50 uppercase font-semibold text-muted-foreground border-b">
                 <tr>
-                  <th className="p-3">Rank</th>
-                  <th className="p-3">Medicine Name</th>
+                  <th className="p-3">Rank & Medicine</th>
                   <th className="p-3 text-right">Units Dispensed / Sold</th>
-                  <th className="p-3 text-right">Generated Revenue</th>
+                  <th className="p-3 text-right">Revenue (ETB)</th>
                   <th className="p-3 text-center">Velocity</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {analytics.topMedicines.map((med, idx) => (
                   <tr key={idx} className="hover:bg-muted/30">
-                    <td className="p-3 font-bold text-muted-foreground">#{idx + 1}</td>
-                    <td className="p-3 font-semibold text-foreground">{med.name}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-muted-foreground">#{idx + 1}</span>
+                        <span className="font-semibold text-foreground">{med.name}</span>
+                      </div>
+                    </td>
                     <td className="p-3 text-right font-mono font-bold text-foreground">
                       {med.quantity.toLocaleString()} units
                     </td>

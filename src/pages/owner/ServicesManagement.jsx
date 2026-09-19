@@ -52,10 +52,17 @@ export default function ServicesManagement() {
   };
 
   const columns = [
-    { header: 'Service Name', accessor: 'name' },
+    { 
+      header: 'Service Name', 
+      cell: (r) => (
+        <div>
+          <p className="font-semibold text-foreground">{r.name}</p>
+          {r.description && <p className="text-xs text-muted-foreground truncate max-w-xs">{r.description}</p>}
+        </div>
+      )
+    },
     { header: 'Category', cell: (r) => <span className="capitalize">{r.category}</span> },
-    { header: 'Price (ETB)', cell: (r) => r.price?.toLocaleString() },
-    { header: 'Description', accessor: 'description' },
+    { header: 'Price (ETB)', cell: (r) => `${r.price?.toLocaleString()} ETB` },
     { header: 'Actions', cell: (r) => (
       <Button variant="ghost" size="sm" className="text-red-500" onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}>Delete</Button>
     )}

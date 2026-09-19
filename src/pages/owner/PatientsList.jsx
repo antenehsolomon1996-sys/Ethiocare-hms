@@ -18,13 +18,33 @@ export default function PatientsList() {
   });
 
   const columns = [
-    { header: 'Patient ID', accessor: 'patient_id' },
-    { header: 'Full Name', accessor: 'full_name' },
-    { header: 'Gender', accessor: 'gender' },
-    { header: 'Age', accessor: 'age' },
+    { 
+      header: 'Patient', 
+      cell: (r) => (
+        <div>
+          <p className="font-semibold text-foreground">{r.full_name}</p>
+          <span className="text-[11px] font-mono text-muted-foreground">{r.patient_id}</span>
+        </div>
+      )
+    },
+    { 
+      header: 'Demographics', 
+      cell: (r) => (
+        <span className="capitalize">{r.gender || '-'} · {r.age ? `${r.age} yrs` : '-'}</span>
+      )
+    },
     { header: 'Phone', accessor: 'phone' },
-    { header: 'Registered', cell: (r) => r.created_date ? format(new Date(r.created_date), 'MMM d, yyyy') : '-' },
-    { header: 'Status', cell: (r) => <StatusBadge status={r.status || 'active'} /> },
+    { 
+      header: 'Status & Reg Date', 
+      cell: (r) => (
+        <div>
+          <StatusBadge status={r.status || 'active'} />
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {r.created_date ? format(new Date(r.created_date), 'MMM d, yyyy') : '-'}
+          </p>
+        </div>
+      )
+    },
   ];
 
   return (

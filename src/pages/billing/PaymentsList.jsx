@@ -553,15 +553,10 @@ export default function PaymentsList() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Payment ID / Receipt</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider w-[220px]">Payment / Receipt</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Patient</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Service / Description</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Amount</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-center">Method</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-center">Status</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Date & Time</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Cashier</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Actions</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right w-[180px]">Amount &amp; Method</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-right w-[200px]">Status &amp; Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -581,7 +576,7 @@ export default function PaymentsList() {
                         className="hover:bg-muted/30 transition-colors cursor-pointer"
                         onClick={() => setDetailPayment(payment)}
                       >
-                        {/* Payment ID / Receipt */}
+                        {/* 1. Payment ID / Receipt */}
                         <TableCell>
                           <div>
                             {payment.receipt_number ? (
@@ -593,13 +588,16 @@ export default function PaymentsList() {
                                 #{payment.id.slice(0, 8)}
                               </span>
                             )}
-                            <span className="text-[10px] text-muted-foreground capitalize">
-                              {payment.reference_type?.replace(/_/g, ' ') || payment.payment_type || 'Service'}
+                            <p className="text-[11px] text-foreground font-medium truncate max-w-[200px]">
+                              {payment.description || `${payment.payment_type?.replace(/_/g, ' ')} Fee`}
+                            </p>
+                            <span className="text-[10px] text-muted-foreground block">
+                              {formattedDate}
                             </span>
                           </div>
                         </TableCell>
 
-                        {/* Patient */}
+                        {/* 2. Patient */}
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-xs">
@@ -616,59 +614,27 @@ export default function PaymentsList() {
                           </div>
                         </TableCell>
 
-                        {/* Service / Description */}
-                        <TableCell>
-                          <p className="font-medium text-sm text-foreground truncate max-w-[200px]">
-                            {payment.description || `${payment.payment_type?.replace(/_/g, ' ')} Fee`}
-                          </p>
-                          {payment.doctor_name && (
-                            <p className="text-xs text-muted-foreground mt-0.5">Dr. {payment.doctor_name}</p>
-                          )}
-                        </TableCell>
-
-                        {/* Amount */}
+                        {/* 3. Amount & Method */}
                         <TableCell className="text-right">
-                          <span className="font-bold text-sm font-heading text-foreground">
+                          <span className="font-bold text-sm font-heading text-foreground block">
                             {amountNum.toLocaleString()} ETB
                           </span>
-                        </TableCell>
-
-                        {/* Method */}
-                        <TableCell className="text-center whitespace-nowrap">
-                          <Badge variant="outline" className="text-xs gap-1 py-1 font-medium">
-                            <MethodIcon className="w-3 h-3 text-muted-foreground" />
-                            {METHOD_LABELS[payment.payment_method] || payment.payment_method || 'Cash'}
-                          </Badge>
-                        </TableCell>
-
-                        {/* Status */}
-                        <TableCell className="text-center whitespace-nowrap">
-                          <StatusBadge status={payment.status} />
-                        </TableCell>
-
-                        {/* Date & Time */}
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                            <Calendar className="w-3.5 h-3.5 opacity-60" />
-                            <span>{formattedDate}</span>
+                          <div className="flex justify-end mt-1">
+                            <Badge variant="outline" className="text-[10px] gap-1 py-0.5 font-medium">
+                              <MethodIcon className="w-3 h-3 text-muted-foreground" />
+                              {METHOD_LABELS[payment.payment_method] || payment.payment_method || 'Cash'}
+                            </Badge>
                           </div>
                         </TableCell>
 
-                        {/* Received by */}
-                        <TableCell>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <User className="w-3.5 h-3.5 opacity-60" />
-                            <span className="truncate max-w-[120px]">{payment.cashier_name || 'Hospital Cashier'}</span>
-                          </div>
-                        </TableCell>
-
-                        {/* Actions */}
+                        {/* 4. Status & Actions */}
                         <TableCell className="text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end gap-2">
+                            <StatusBadge status={payment.status} />
                             {payment.status === 'pending' ? (
                               <Button
                                 size="sm"
-                                className="h-8 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                                className="h-8 px-2.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
                                 onClick={() => {
                                   setSelectedPayment(payment);
                                   setPaymentMethod(payment.payment_method || 'cash');
@@ -681,7 +647,7 @@ export default function PaymentsList() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 px-2.5 text-xs border-border/60 hover:bg-muted/50"
+                                className="h-8 px-2 text-xs border-border/60 hover:bg-muted/50"
                                 onClick={() =>
                                   setActiveReceipt({
                                     receipt_number: payment.receipt_number || `RCP-${payment.id.slice(0, 8)}`,

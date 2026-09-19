@@ -52,9 +52,16 @@ export default function LabTestsManagement() {
   };
 
   const columns = [
-    { header: 'Test Name', accessor: 'name' },
-    { header: 'Category', accessor: 'category' },
-    { header: 'Price (ETB)', cell: (r) => r.price?.toLocaleString() },
+    { 
+      header: 'Test Name', 
+      cell: (r) => (
+        <div>
+          <p className="font-semibold text-foreground text-sm">{r.name}</p>
+          <span className="text-[11px] text-muted-foreground">{r.category}</span>
+        </div>
+      )
+    },
+    { header: 'Price (ETB)', cell: (r) => `${r.price?.toLocaleString()} ETB` },
     { header: 'Turnaround', accessor: 'turnaround_time' },
     { header: 'Actions', cell: (r) => (
       <Button variant="ghost" size="sm" className="text-red-500" onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}>

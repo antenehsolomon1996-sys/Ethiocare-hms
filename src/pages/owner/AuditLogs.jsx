@@ -3,7 +3,9 @@ import { ethioCareClient } from '@/api/ethioCareClient';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Search, User, Clock, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Shield, Search, User, Clock, Activity, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 
@@ -23,16 +25,16 @@ const ROLE_COLORS = {
   owner: 'bg-yellow-100 text-yellow-700',
   doctor: 'bg-blue-100 text-blue-700',
   nurse: 'bg-pink-100 text-pink-700',
-  receptionist: 'bg-teal-100 text-teal-700',
-  lab_technician: 'bg-purple-100 text-purple-700',
   pharmacist: 'bg-green-100 text-green-700',
-  accountant: 'bg-orange-100 text-orange-700',
+  receptionist: 'bg-purple-100 text-purple-700',
+  lab_technician: 'bg-cyan-100 text-cyan-700',
 };
 
 export default function AuditLogs() {
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [moduleFilter, setModuleFilter] = useState('all');
+  const [detailLog, setDetailLog] = useState(null);
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ['auditLogs'],
@@ -121,45 +123,70 @@ export default function AuditLogs() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">Time</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">User</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">Role</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">Action</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">Module</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">Description</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">IP</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">Timestamp &amp; IP</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">User &amp; Role</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase">Action &amp; Module</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase">Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.slice(0, 200).map(log => (
                     <tr key={log.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                      {/* 1. Timestamp & IP */}
                       <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {log.created_date ? format(new Date(log.created_date), 'MMM d, HH:mm') : '-'}
+                        <div className="flex items-center gap-1 text-xs text-foreground font-medium">
+                          <Clock className="w-3 h-3 text-muted-foreground" />
+                          {log.created_date ? format(new Date(log.created_date), 'MMM d, HH:mm:ss') : '-'}
                         </div>
+                        <span className="text-[10px] text-muted-foreground font-mono block mt-0.5">
+                          IP: {log.ip_address || 'Internal/Local'}
+                        </span>
                       </td>
+
+                      {/* 2. User & Role */}
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <User className="w-3 h-3 text-primary" />
                           </div>
-                          <span className="text-xs font-medium">{log.user_name}</span>
+                          <div>
+                            <p className="text-xs font-semibold text-foreground">{log.user_name}</p>
+                            <Badge className={`text-[9px] px-1 py-0 ${ROLE_COLORS[log.user_role] || 'bg-gray-100 text-gray-600'}`}>
+                              {log.user_role?.replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
                         </div>
                       </td>
+
+                      {/* 3. Action & Module */}
                       <td className="px-4 py-2.5">
-                        <Badge className={`text-xs ${ROLE_COLORS[log.user_role] || 'bg-gray-100 text-gray-600'}`}>
-                          {log.user_role?.replace('_', ' ')}
-                        </Badge>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge className={`text-[10px] uppercase font-bold tracking-wider px-1.5 py-0 ${ACTION_COLORS[log.action] || 'bg-gray-100 text-gray-600'}`}>
+                            {log.action}
+                          </Badge>
+                          <span className="text-xs font-medium text-muted-foreground capitalize">
+                            {log.module}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-4 py-2.5">
-                        <Badge className={`text-xs ${ACTION_COLORS[log.action] || 'bg-gray-100 text-gray-600'}`}>
-                          {log.action}
-                        </Badge>
+
+                      {/* 4. Description & Details */}
+                      <td className="px-4 py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-xs text-muted-foreground truncate max-w-[160px] text-left">
+                            {log.description}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
+                            onClick={() => setDetailLog(log)}
+                            title="View log details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </td>
-                      <td className="px-4 py-2.5 text-xs font-medium">{log.module}</td>
-                      <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-xs truncate">{log.description}</td>
-                      <td className="px-4 py-2.5 text-xs text-muted-foreground font-mono">{log.ip_address || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -194,6 +221,66 @@ export default function AuditLogs() {
           </>
         )}
       </div>
+
+      {/* Audit Log Details Dialog */}
+      <Dialog open={!!detailLog} onOpenChange={(open) => !open && setDetailLog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <Eye className="w-4 h-4 text-primary" />
+              Audit Log Event Details
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Complete forensic record and action payload.
+            </DialogDescription>
+          </DialogHeader>
+          {detailLog && (
+            <div className="space-y-3 pt-2 text-xs">
+              <div className="bg-muted/40 p-3.5 rounded-xl space-y-2.5 border border-border/60">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Timestamp:</span>
+                  <span className="font-mono">{detailLog.created_date ? format(new Date(detailLog.created_date), 'yyyy-MM-dd HH:mm:ss') : '-'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">User:</span>
+                  <span className="font-semibold">{detailLog.user_name} ({detailLog.user_role})</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">User ID:</span>
+                  <span className="font-mono text-[11px]">{detailLog.user_id || 'System'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Action:</span>
+                  <Badge className={`text-[10px] uppercase font-bold ${ACTION_COLORS[detailLog.action] || ''}`}>
+                    {detailLog.action}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Module / Entity:</span>
+                  <span className="font-semibold capitalize">{detailLog.module} · {detailLog.entity_name || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Record ID:</span>
+                  <span className="font-mono text-[11px]">{detailLog.record_id || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">IP Address:</span>
+                  <span className="font-mono">{detailLog.ip_address || 'Local/Internal'}</span>
+                </div>
+              </div>
+              <div className="p-3 bg-muted/20 rounded-xl border border-border/40">
+                <p className="text-muted-foreground font-medium mb-1">Description:</p>
+                <p className="text-foreground leading-relaxed">{detailLog.description}</p>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" size="sm" onClick={() => setDetailLog(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

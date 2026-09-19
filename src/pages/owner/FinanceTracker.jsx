@@ -19,7 +19,8 @@ import {
   FileText,
   CreditCard,
   Building2,
-  CheckCircle2
+  CheckCircle2,
+  Eye
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -120,6 +121,7 @@ export default function FinanceTracker() {
   const [chartTab, setChartTab] = useState('daily');
 
   // Modals state
+  const [detailTx, setDetailTx] = useState(null);
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [expenseForm, setExpenseForm] = useState({
@@ -601,91 +603,104 @@ export default function FinanceTracker() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 text-xs">
-                  <TableHead className="w-[110px]">Date</TableHead>
-                  <TableHead className="w-[90px]">Type</TableHead>
-                  <TableHead>Category / Source</TableHead>
-                  <TableHead>Description / Reference</TableHead>
-                  <TableHead className="w-[120px]">Payment Method</TableHead>
-                  <TableHead className="w-[130px]">Recorded By</TableHead>
-                  <TableHead className="text-right w-[140px]">Amount (ETB)</TableHead>
-                  <TableHead className="text-right w-[80px]">Actions</TableHead>
+                  <TableHead className="w-[140px]">Date &amp; Type</TableHead>
+                  <TableHead>Category &amp; Description</TableHead>
+                  <TableHead className="text-right w-[160px]">Amount &amp; Method</TableHead>
+                  <TableHead className="text-right w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
                       Loading financial ledger...
                     </TableCell>
                   </TableRow>
                 ) : filteredTransactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
                       No financial transactions match your criteria.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredTransactions.map((t) => (
                     <TableRow key={t.id} className="text-xs hover:bg-muted/30">
-                      <TableCell className="font-mono text-muted-foreground">
-                        {t.date}
-                      </TableCell>
+                      {/* 1. Date & Type */}
                       <TableCell>
-                        {t.type === 'income' ? (
-                          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 gap-1 text-[10px] font-medium">
-                            <ArrowUpRight className="w-3 h-3" /> Income
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-600 gap-1 text-[10px] font-medium">
-                            <ArrowDownRight className="w-3 h-3" /> Expense
-                          </Badge>
-                        )}
+                        <span className="font-mono text-muted-foreground block">{t.date}</span>
+                        <div className="mt-1">
+                          {t.type === 'income' ? (
+                            <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 gap-1 text-[10px] font-medium py-0">
+                              <ArrowUpRight className="w-3 h-3" /> Income
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-600 gap-1 text-[10px] font-medium py-0">
+                              <ArrowDownRight className="w-3 h-3" /> Expense
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
-                      <TableCell className="font-medium capitalize">
-                        {t.sourceOrCategory.replace(/_/g, ' ')}
-                      </TableCell>
+
+                      {/* 2. Category & Description */}
                       <TableCell>
-                        <div className="font-medium text-foreground truncate max-w-[280px]">
-                          {t.title}
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-semibold text-foreground text-xs">{t.title}</span>
+                          <Badge variant="secondary" className="capitalize text-[10px] py-0">
+                            {t.sourceOrCategory.replace(/_/g, ' ')}
+                          </Badge>
                         </div>
                         {t.description && (
-                          <div className="text-[11px] text-muted-foreground truncate max-w-[280px]">
+                          <div className="text-[11px] text-muted-foreground truncate max-w-xs">
                             {t.description}
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="capitalize text-muted-foreground">
-                        {t.paymentMethod.replace(/_/g, ' ')}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground truncate max-w-[120px]">
-                        {t.recordedBy}
-                      </TableCell>
-                      <TableCell className={`text-right font-semibold ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </TableCell>
+
+                      {/* 3. Amount & Method */}
                       <TableCell className="text-right">
-                        {t.canEdit ? (
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                              onClick={() => t.entityName === 'Expense' ? openEditExpense(t) : openEditIncome(t)}
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                              onClick={() => confirmDelete(t)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground/60 italic">Automated</span>
-                        )}
+                        <div className={`font-semibold font-mono text-sm ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} ETB
+                        </div>
+                        <span className="text-[11px] text-muted-foreground capitalize block">
+                          {t.paymentMethod.replace(/_/g, ' ')}
+                        </span>
+                      </TableCell>
+
+                      {/* 4. Actions */}
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={() => setDetailTx(t)}
+                            title="View Transaction Details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                          {t.canEdit && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => t.entityName === 'Expense' ? openEditExpense(t) : openEditIncome(t)}
+                                title="Edit Record"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                                onClick={() => confirmDelete(t)}
+                                title="Delete Record"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -929,6 +944,69 @@ export default function FinanceTracker() {
               {isSaving ? 'Deleting...' : 'Confirm Delete'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Transaction Details Dialog */}
+      <Dialog open={!!detailTx} onOpenChange={(open) => !open && setDetailTx(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <Eye className="w-4 h-4 text-primary" />
+              Transaction Details
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Complete financial record and ledger audit info.
+            </DialogDescription>
+          </DialogHeader>
+          {detailTx && (
+            <div className="space-y-3 pt-2 text-xs">
+              <div className="bg-muted/40 p-3 rounded-xl space-y-2 border border-border/60">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Record ID:</span>
+                  <span className="font-mono text-[11px]">{detailTx.id}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Date:</span>
+                  <span className="font-semibold">{detailTx.date}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Type:</span>
+                  <Badge variant={detailTx.type === 'income' ? 'success' : 'destructive'} className="text-[10px] capitalize">
+                    {detailTx.type}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Category / Source:</span>
+                  <span className="capitalize font-medium">{detailTx.sourceOrCategory?.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Payment Method:</span>
+                  <span className="capitalize font-medium">{detailTx.paymentMethod?.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Recorded By:</span>
+                  <span>{detailTx.recordedBy || 'System / Auto'}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-border/60">
+                  <span className="text-muted-foreground font-semibold">Total Amount:</span>
+                  <span className={`font-mono text-base font-bold ${detailTx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {detailTx.type === 'income' ? '+' : '-'}{detailTx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} ETB
+                  </span>
+                </div>
+              </div>
+              {detailTx.description && (
+                <div className="p-3 bg-muted/20 rounded-xl border border-border/40">
+                  <p className="text-muted-foreground font-medium mb-1">Description / Notes:</p>
+                  <p className="text-foreground">{detailTx.description}</p>
+                </div>
+              )}
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" size="sm" onClick={() => setDetailTx(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

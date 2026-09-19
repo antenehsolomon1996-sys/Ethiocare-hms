@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Search, Pencil, Trash2, CheckCircle2, Clock, KeyRound, Copy, RefreshCw, Mail, AtSign, Building2 } from 'lucide-react';
+import { UserPlus, Search, Pencil, Trash2, CheckCircle2, Clock, KeyRound, Copy, RefreshCw, Mail, AtSign, Building2, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -92,6 +92,7 @@ export default function StaffManagement() {
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [generatedCreds, setGeneratedCreds] = useState(null);
+  const [detailStaff, setDetailStaff] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: staff = [], isLoading } = useQuery({
@@ -396,14 +397,10 @@ export default function StaffManagement() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Name</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Hospital Email</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Username</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Role</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Assigned Room</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Activation</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Status</th>
-                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Staff Member</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Role &amp; Room</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider">Activation &amp; Status</th>
+                    <th className="text-right px-4 py-3 text-xs font-bold uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -411,51 +408,77 @@ export default function StaffManagement() {
                     const accountStatus = getUserStatus(member.email);
                     return (
                       <tr key={member.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-semibold">{member.full_name}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs">{member.email}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs font-mono">{member.username || '-'}</td>
-                        <td className="px-4 py-3">{ROLES.find(r => r.value === member.role)?.label || member.role}</td>
+                        {/* 1. Staff Member */}
                         <td className="px-4 py-3">
-                          {member.assigned_room_number ? (
-                            <Badge variant="outline" className="text-xs font-mono bg-primary/5 text-primary border-primary/20">
-                              <Building2 className="w-3 h-3 mr-1" />
-                              Room {member.assigned_room_number}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Unassigned</span>
-                          )}
+                          <p className="font-semibold text-foreground text-sm">{member.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{member.email}</p>
+                          {member.username && <p className="text-[11px] text-muted-foreground font-mono">@{member.username}</p>}
                         </td>
+
+                        {/* 2. Role & Room */}
                         <td className="px-4 py-3">
-                          {member.password_set ? (
-                            <Badge variant="success" className="text-xs gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> Activated
-                            </Badge>
-                          ) : member.activation_code ? (
-                            <div className="flex items-center gap-1">
-                              <code className="text-xs bg-muted px-2 py-0.5 rounded font-mono">{member.activation_code}</code>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" title="Copy code" onClick={() => handleCopyCode(member.activation_code)}>
-                                <Copy className="w-3 h-3" />
-                              </Button>
+                          <div className="space-y-1">
+                            <span className="font-medium text-xs text-foreground block">
+                              {ROLES.find(r => r.value === member.role)?.label || member.role}
+                            </span>
+                            {member.assigned_room_number ? (
+                              <Badge variant="outline" className="text-[10px] font-mono bg-primary/5 text-primary border-primary/20">
+                                <Building2 className="w-3 h-3 mr-1" />
+                                Room {member.assigned_room_number}
+                              </Badge>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground italic">Unassigned Room</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* 3. Activation & Status */}
+                        <td className="px-4 py-3">
+                          <div className="space-y-1.5">
+                            <StatusBadge status={member.status || 'active'} />
+                            <div>
+                              {member.password_set ? (
+                                <Badge variant="success" className="text-[10px] gap-1 py-0">
+                                  <CheckCircle2 className="w-3 h-3" /> Activated
+                                </Badge>
+                              ) : member.activation_code ? (
+                                <div className="flex items-center gap-1">
+                                  <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono">{member.activation_code}</code>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6" title="Copy code" onClick={() => handleCopyCode(member.activation_code)}>
+                                    <Copy className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px]">No code</Badge>
+                              )}
                             </div>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">No code</Badge>
-                          )}
+                          </div>
                         </td>
-                        <td className="px-4 py-3"><StatusBadge status={member.status || 'active'} /></td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
+
+                        {/* 4. Actions */}
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              title="View details"
+                              onClick={() => setDetailStaff(member)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
                             {!member.password_set && (
-                              <Button variant="ghost" size="icon" className="h-9 w-9" title="Regenerate activation code" onClick={() => handleRegenerateCode(member)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Regenerate activation code" onClick={() => handleRegenerateCode(member)}>
                                 <RefreshCw className="w-3.5 h-3.5" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="icon" className="h-9 w-9" title={member.status === 'active' ? 'Suspend' : 'Reactivate'} onClick={() => handleToggleStatus(member)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title={member.status === 'active' ? 'Suspend' : 'Reactivate'} onClick={() => handleToggleStatus(member)}>
                               {member.status === 'active' ? <Clock className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Edit staff member" onClick={() => openEdit(member)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit staff member" onClick={() => openEdit(member)}>
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive" aria-label="Delete staff member" onClick={() => setDeleteTarget(member)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" aria-label="Delete staff member" onClick={() => setDeleteTarget(member)}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
@@ -713,6 +736,72 @@ export default function StaffManagement() {
             <Button variant="outline" className="flex-1" onClick={() => setDeleteTarget(null)}>Cancel</Button>
             <Button variant="destructive" className="flex-1" onClick={handleDelete}>Remove</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      {/* Staff Profile Details Dialog */}
+      <Dialog open={!!detailStaff} onOpenChange={(open) => !open && setDetailStaff(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2">
+              <Eye className="w-4 h-4 text-primary" />
+              Staff Profile Details
+            </DialogTitle>
+          </DialogHeader>
+          {detailStaff && (
+            <div className="space-y-3 pt-2 text-xs">
+              <div className="bg-muted/40 p-3.5 rounded-xl space-y-2.5 border border-border/60">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Full Name:</span>
+                  <span className="font-semibold text-foreground text-sm">{detailStaff.full_name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Hospital Email:</span>
+                  <span className="font-mono text-primary">{detailStaff.email}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Username:</span>
+                  <span className="font-mono text-muted-foreground">{detailStaff.username || 'Not set'}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Role:</span>
+                  <Badge variant="secondary" className="capitalize text-[10px]">
+                    {ROLES.find(r => r.value === detailStaff.role)?.label || detailStaff.role}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Department:</span>
+                  <span>{detailStaff.department || 'General'}</span>
+                </div>
+                {detailStaff.specialty && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground font-medium">Specialty:</span>
+                    <span>{detailStaff.specialty}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Assigned Room:</span>
+                  <span>
+                    {detailStaff.assigned_room_number ? `Room ${detailStaff.assigned_room_number}` : 'Unassigned'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Account Status:</span>
+                  <StatusBadge status={detailStaff.status || 'active'} />
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-border/60">
+                  <span className="text-muted-foreground font-medium">Activation Code:</span>
+                  <code className="bg-muted px-2 py-0.5 rounded font-mono font-semibold">
+                    {detailStaff.password_set ? 'Activated' : (detailStaff.activation_code || 'None')}
+                  </code>
+                </div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" size="sm" onClick={() => setDetailStaff(null)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

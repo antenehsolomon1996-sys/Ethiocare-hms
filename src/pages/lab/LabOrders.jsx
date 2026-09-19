@@ -118,32 +118,39 @@ export default function LabOrders() {
 
   const columns = [
     { header: 'Patient', accessor: 'patient_name' },
-    { header: 'Test Type', accessor: 'test_type' },
-    { header: 'Test Name', accessor: 'test_name' },
-    { header: 'Doctor', accessor: 'doctor_name' },
     { 
-      header: 'Assigned Assistant', 
+      header: 'Diagnostic Test', 
       cell: (r) => (
-        <span className="text-xs">
-          {r.assigned_assistant_name ? (
-            <span className="font-medium text-foreground">{r.assigned_assistant_name}</span>
-          ) : (
-            <span className="text-muted-foreground italic">Unassigned (Lab Pool)</span>
-          )}
-        </span>
+        <div>
+          <p className="font-semibold text-foreground text-xs">{r.test_name || r.test_type}</p>
+          <span className="text-[11px] text-muted-foreground">{r.test_type} · Dr. {r.doctor_name || 'Staff'}</span>
+        </div>
       )
     },
-    { header: 'Status', cell: (r) => <StatusBadge status={r.test_status} /> },
-    { header: 'Action', cell: (r) => {
-      if (r.test_status === 'pending' || r.test_status === 'awaiting_sample' || !r.test_status) return (
-        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleStartTest(r); }}>Start Test</Button>
-      );
-      if (r.test_status === 'in_progress') return (
-        <Button size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); setResults(r.results || ''); setResultNotes(r.result_notes || ''); }}>Enter Results</Button>
-      );
-      if (r.test_status === 'completed') return <span className="text-xs text-emerald-600 font-medium">Done</span>;
-      return null;
-    }}
+    { 
+      header: 'Status & Tech', 
+      cell: (r) => (
+        <div>
+          <StatusBadge status={r.test_status} />
+          <p className="text-[10px] text-muted-foreground mt-0.5 truncate max-w-[120px]">
+            {r.assigned_assistant_name || 'Lab Pool'}
+          </p>
+        </div>
+      )
+    },
+    { 
+      header: 'Action', 
+      cell: (r) => {
+        if (r.test_status === 'pending' || r.test_status === 'awaiting_sample' || !r.test_status) return (
+          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={(e) => { e.stopPropagation(); handleStartTest(r); }}>Start Test</Button>
+        );
+        if (r.test_status === 'in_progress') return (
+          <Button size="sm" className="h-8 text-xs" onClick={(e) => { e.stopPropagation(); setSelected(r); setResults(r.results || ''); setResultNotes(r.result_notes || ''); }}>Enter Results</Button>
+        );
+        if (r.test_status === 'completed') return <span className="text-xs text-emerald-600 font-medium">Done</span>;
+        return null;
+      }
+    }
   ];
 
   return (
