@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Building2, Plus, Pencil, Trash2, BedSingle, Users, CheckCircle2, AlertTriangle, Shield, RefreshCw } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, BedSingle, Users, CheckCircle2, AlertTriangle, Shield, RefreshCw, LogOut, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays } from 'date-fns';
 import { logAudit } from '@/lib/auditLogger';
+import InpatientDischargeModal from '@/components/reception/InpatientDischargeModal';
+import { inpatientBedService } from '@/services/inpatientBed.service';
 
 export default function RoomBedManagement() {
   const queryClient = useQueryClient();
@@ -40,8 +42,13 @@ export default function RoomBedManagement() {
     room_id: '',
     bed_number: '',
     bed_label: '',
+    price: '',
     status: 'available'
   });
+
+  // Discharge modal state
+  const [dischargeModalOpen, setDischargeModalOpen] = useState(false);
+  const [selectedBedForDischarge, setSelectedBedForDischarge] = useState(null);
 
   const [saving, setSaving] = useState(false);
 
@@ -155,6 +162,7 @@ export default function RoomBedManagement() {
         room_id: String(bed.room_id || ''),
         bed_number: bed.bed_number || '',
         bed_label: bed.bed_label || '',
+        price: bed.price ? String(bed.price) : bed.daily_rate ? String(bed.daily_rate) : '',
         status: bed.status || 'available'
       });
     } else {
@@ -163,6 +171,7 @@ export default function RoomBedManagement() {
         room_id: rooms[0]?.id ? String(rooms[0].id) : '',
         bed_number: '',
         bed_label: '',
+        price: '',
         status: 'available'
       });
     }
@@ -179,11 +188,14 @@ export default function RoomBedManagement() {
       const room = rooms.find(r => String(r.id) === String(bedForm.room_id));
       const bedNumber = bedForm.bed_number.trim().toUpperCase();
       const label = bedForm.bed_label?.trim() || `Room ${room?.room_number || ''} - Bed ${bedNumber}`;
+      const customPrice = bedForm.price ? parseFloat(bedForm.price) : null;
 
       const payload = {
         room_id: bedForm.room_id,
         bed_number: bedNumber,
         bed_label: label,
+        price: customPrice,
+        daily_rate: customPrice,
         status: bedForm.status
       };
 
@@ -293,47 +305,81 @@ export default function RoomBedManagement() {
       header: 'Bed & Room', 
       cell: (b) => {
         const r = rooms.find(room => String(room.id) === String(b.room_id));
+        const effectivePrice = inpatientBedService.getEffectiveBedPrice(b, r);
         return (
           <div>
             <span className="font-semibold text-foreground">{b.bed_label || `Bed ${b.bed_number}`}</span>
-            <p className="text-[11px] text-muted-foreground">{r ? `Room ${r.room_number}` : 'No Room'}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {r ? `Room ${r.room_number} (${r.department || 'Ward'})` : 'No Room'} · <strong className="text-primary font-mono">{effectivePrice} ETB/day</strong>
+            </p>
           </div>
         );
       }
     },
     { 
-      header: 'Current Status', 
+      header: 'Status', 
       cell: (b) => (
-        <Select value={b.status} onValueChange={(val) => handleUpdateBedStatus(b.id, val)}>
-          <SelectTrigger className="h-7 w-28 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="available">Available</SelectItem>
-            <SelectItem value="occupied">Occupied</SelectItem>
-            <SelectItem value="reserved">Reserved</SelectItem>
-            <SelectItem value="maintenance">Maintenance</SelectItem>
-            <SelectItem value="released">Released</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="space-y-1">
+          <Select value={b.status} onValueChange={(val) => handleUpdateBedStatus(b.id, val)}>
+            <SelectTrigger className="h-7 w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="available">Available</SelectItem>
+              <SelectItem value="occupied">Occupied</SelectItem>
+              <SelectItem value="reserved">Reserved</SelectItem>
+              <SelectItem value="maintenance">Maintenance</SelectItem>
+              <SelectItem value="released">Released</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       )
     },
     { 
-      header: 'Occupant', 
-      cell: (b) => (
-        b.current_patient_name ? (
-          <span className="font-semibold text-purple-700 dark:text-purple-300 text-xs truncate max-w-[130px] block">
-            {b.current_patient_name}
-          </span>
-        ) : (
-          <span className="text-muted-foreground text-xs italic">None</span>
-        )
-      )
+      header: 'Occupant & Charges', 
+      cell: (b) => {
+        if (b.status === 'occupied' && b.current_patient_name) {
+          const r = rooms.find(room => String(room.id) === String(b.room_id));
+          const effectivePrice = inpatientBedService.getEffectiveBedPrice(b, r);
+          const admissionDate = b.assigned_at || new Date().toISOString();
+          const elapsedDays = Math.max(1, differenceInCalendarDays(new Date(), new Date(admissionDate)) || 1);
+          const accumulated = elapsedDays * effectivePrice;
+
+          return (
+            <div>
+              <span className="font-semibold text-purple-700 dark:text-purple-300 text-xs truncate max-w-[140px] block">
+                👤 {b.current_patient_name}
+              </span>
+              <p className="text-[10px] text-muted-foreground">
+                Stay: <strong>{elapsedDays} {elapsedDays === 1 ? 'day' : 'days'}</strong> ({accumulated.toLocaleString()} ETB)
+              </p>
+            </div>
+          );
+        }
+        return (
+          <span className="text-muted-foreground text-xs italic">Unoccupied</span>
+        );
+      }
     },
     {
       header: 'Actions',
       cell: (b) => (
         <div className="flex items-center gap-1 justify-end">
+          {b.status === 'occupied' && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-8 px-2 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/40 gap-1"
+              onClick={() => {
+                setSelectedBedForDischarge(b);
+                setDischargeModalOpen(true);
+              }}
+              title="Discharge patient & finalize billing"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Discharge
+            </Button>
+          )}
           <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleOpenBedModal(b)}>
             <Pencil className="w-3.5 h-3.5" />
           </Button>
@@ -565,6 +611,20 @@ export default function RoomBedManagement() {
             </div>
 
             <div>
+              <Label>Bed Custom Price (ETB / day)</Label>
+              <Input
+                type="number"
+                min="0"
+                placeholder={`Leave blank to use Room Rate (${rooms.find(r => String(r.id) === String(bedForm.room_id))?.daily_rate || 500} ETB)`}
+                value={bedForm.price}
+                onChange={e => setBedForm(f => ({ ...f, price: e.target.value }))}
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Optional custom daily admission charge for this specific bed. If empty, the room's rate is applied.
+              </p>
+            </div>
+
+            <div>
               <Label>Initial Status</Label>
               <Select value={bedForm.status} onValueChange={val => setBedForm(f => ({ ...f, status: val }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -585,6 +645,29 @@ export default function RoomBedManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Discharge & Settlement Modal */}
+      {selectedBedForDischarge && (
+        <InpatientDischargeModal
+          open={dischargeModalOpen}
+          onOpenChange={(val) => {
+            setDischargeModalOpen(val);
+            if (!val) setSelectedBedForDischarge(null);
+          }}
+          bed={selectedBedForDischarge}
+          room={rooms.find(r => String(r.id) === String(selectedBedForDischarge.room_id))}
+          activeAssignment={assignments.find(a => 
+            String(a.bed_id) === String(selectedBedForDischarge.id) && 
+            (a.status === 'occupied' || a.status === 'active' || !a.discharge_date)
+          )}
+          onDischarged={() => {
+            queryClient.invalidateQueries({ queryKey: ['beds'] });
+            queryClient.invalidateQueries({ queryKey: ['rooms'] });
+            queryClient.invalidateQueries({ queryKey: ['bed_assignments'] });
+            setSelectedBedForDischarge(null);
+          }}
+        />
+      )}
     </div>
   );
 }

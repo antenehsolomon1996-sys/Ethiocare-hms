@@ -338,7 +338,13 @@ export default function FinanceTracker() {
       if (typeFilter !== 'all' && t.type !== typeFilter) return false;
 
       // Category filter
-      if (categoryFilter !== 'all' && t.sourceOrCategory !== categoryFilter) return false;
+      if (categoryFilter !== 'all') {
+        if (categoryFilter === 'bed') {
+          if (!t.sourceOrCategory?.toLowerCase().includes('bed')) return false;
+        } else if (t.sourceOrCategory !== categoryFilter) {
+          return false;
+        }
+      }
 
       // Search filter
       if (searchTerm.trim()) {
@@ -583,13 +589,14 @@ export default function FinanceTracker() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="bed">Inpatient Bed Revenue</SelectItem>
+                  <SelectItem value="registration">Registration</SelectItem>
+                  <SelectItem value="laboratory">Laboratory</SelectItem>
+                  <SelectItem value="pharmacy_walk_in">Walk-in Pharmacy</SelectItem>
                   <SelectItem value="salaries">Salaries</SelectItem>
                   <SelectItem value="medical_supplies">Medical Supplies</SelectItem>
                   <SelectItem value="pharmacy_purchase">Pharmacy Stock</SelectItem>
                   <SelectItem value="utilities">Utilities</SelectItem>
-                  <SelectItem value="registration">Registration</SelectItem>
-                  <SelectItem value="laboratory">Laboratory</SelectItem>
-                  <SelectItem value="pharmacy_walk_in">Walk-in Pharmacy</SelectItem>
                   <SelectItem value="cafeteria">Cafeteria</SelectItem>
                   <SelectItem value="grants">Grants</SelectItem>
                 </SelectContent>

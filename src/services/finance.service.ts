@@ -117,11 +117,16 @@ export const financeService = {
     // Add Paid Hospital Payments
     for (const p of paidPayments) {
       const pDate = p.paid_date || p.created_at || p.created_date || format(new Date(), 'yyyy-MM-dd');
+      const isBedPayment = p.payment_type === 'bed' || String(p.reference_type || '').startsWith('bed');
+      const sourceOrCategory = isBedPayment 
+        ? (p.reference_type || 'bed')
+        : (p.reference_type || p.payment_type || 'hospital_service');
+
       transactions.push({
         id: p.id,
         type: 'income',
-        sourceOrCategory: p.reference_type || p.payment_type || 'hospital_service',
-        title: p.description || `${p.payment_type || 'Hospital'} Payment`,
+        sourceOrCategory,
+        title: p.description || (isBedPayment ? 'Inpatient Bed Service' : `${p.payment_type || 'Hospital'} Payment`),
         amount: Number(p.amount) || 0,
         paymentMethod: p.payment_method || 'cash',
         date: String(pDate).slice(0, 10),

@@ -10,11 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { 
   Building2, Users, CheckCircle2, Clock, Search, 
-  LogOut, BedSingle, ShieldCheck, AlertCircle, Sparkles 
+  LogOut, BedSingle, ShieldCheck, AlertCircle, Sparkles, Plus, DollarSign 
 } from 'lucide-react';
 import RoomBedServiceModal from '@/components/reception/RoomBedServiceModal';
+import InpatientDischargeModal from '@/components/reception/InpatientDischargeModal';
+import { inpatientBedService } from '@/services/inpatientBed.service';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays } from 'date-fns';
 import { notificationService } from '@/services/notification.service';
 import { logAudit } from '@/lib/auditLogger';
 
@@ -24,7 +26,10 @@ export default function BedManagement() {
   const [floorFilter, setFloorFilter] = useState('all');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedVisitForAdmission, setSelectedVisitForAdmission] = useState(null);
-  const [isDischarging, setIsDischarging] = useState(false);
+  
+  // Discharge modal state
+  const [dischargeModalOpen, setDischargeModalOpen] = useState(false);
+  const [selectedBedForDischarge, setSelectedBedForDischarge] = useState(null);
 
   // Queries
   const { data: rooms = [], isLoading: isLoadingRooms } = useQuery({
@@ -37,6 +42,12 @@ export default function BedManagement() {
     queryKey: ['beds'],
     queryFn: () => ethioCareClient.entities.Bed.list(),
     refetchInterval: 10000
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ['bed_assignments'],
+    queryFn: () => ethioCareClient.entities.BedAssignment.list('-created_date', 100),
+    refetchInterval: 15000
   });
 
   const { data: visits = [] } = useQuery({
@@ -146,12 +157,25 @@ export default function BedManagement() {
           </p>
         </div>
 
-        {pendingRequests.length > 0 && (
-          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 px-3 py-1 text-xs self-start sm:self-auto font-semibold animate-pulse">
-            <AlertCircle className="w-3.5 h-3.5 mr-1" />
-            {pendingRequests.length} Pending Admission {pendingRequests.length === 1 ? 'Request' : 'Requests'}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {pendingRequests.length > 0 && (
+            <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 px-3 py-1 text-xs font-semibold animate-pulse">
+              <AlertCircle className="w-3.5 h-3.5 mr-1" />
+              {pendingRequests.length} Pending {pendingRequests.length === 1 ? 'Request' : 'Requests'}
+            </Badge>
+          )}
+
+          <Button 
+            className="gap-2 shrink-0" 
+            onClick={() => {
+              setSelectedVisitForAdmission(null);
+              setAssignModalOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            Admit Patient to Bed
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -273,7 +297,7 @@ export default function BedManagement() {
                             Room {room.room_number}
                           </CardTitle>
                           <CardDescription className="text-xs mt-0.5">
-                            {room.department || 'Inpatient Ward'} · {room.floor || 'Floor 1'} · {room.daily_rate} ETB/day
+                            {room.department || 'Inpatient Ward'} · {room.floor || 'Floor 1'} · <strong className="text-foreground">{room.daily_rate} ETB/day</strong>
                           </CardDescription>
                         </div>
                       </div>
@@ -297,6 +321,11 @@ export default function BedManagement() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {bedsInRoom.map(bed => {
                           const isOccupied = bed.status === 'occupied';
+                          const effectiveRate = inpatientBedService.getEffectiveBedPrice(bed, room);
+                          const admissionDate = bed.assigned_at || new Date().toISOString();
+                          const elapsedDays = Math.max(1, differenceInCalendarDays(new Date(), new Date(admissionDate)) || 1);
+                          const accumulated = elapsedDays * effectiveRate;
+
                           return (
                             <div
                               key={bed.id}
@@ -309,7 +338,7 @@ export default function BedManagement() {
                               <div className="flex items-center justify-between mb-1.5">
                                 <span className="font-bold text-xs text-foreground flex items-center gap-1.5">
                                   <BedSingle className={`w-3.5 h-3.5 ${isOccupied ? 'text-purple-600' : 'text-emerald-600'}`} />
-                                  {bed.bed_number}
+                                  {bed.bed_label || `Bed ${bed.bed_number}`}
                                 </span>
                                 <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
                                   isOccupied 
@@ -320,11 +349,19 @@ export default function BedManagement() {
                                 </Badge>
                               </div>
 
+                              <p className="text-[11px] text-muted-foreground font-mono">
+                                Rate: <strong>{effectiveRate} ETB/day</strong>
+                              </p>
+
                               {isOccupied ? (
                                 <div className="space-y-1.5 mt-2 pt-2 border-t border-purple-200/50 dark:border-purple-800/40">
-                                  <p className="text-xs font-semibold text-foreground truncate">
-                                    {bed.current_patient_name || 'Patient'}
+                                  <p className="text-xs font-semibold text-foreground truncate" title={bed.current_patient_name}>
+                                    👤 {bed.current_patient_name || 'Patient'}
                                   </p>
+                                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                                    <span>Stay: {elapsedDays} {elapsedDays === 1 ? 'day' : 'days'}</span>
+                                    <span className="font-semibold text-primary font-mono">{accumulated.toLocaleString()} ETB</span>
+                                  </div>
                                   {bed.assigned_at && (
                                     <p className="text-[10px] text-muted-foreground">
                                       Since: {format(new Date(bed.assigned_at), 'MMM d, h:mm a')}
@@ -333,18 +370,33 @@ export default function BedManagement() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="w-full h-7 text-[11px] text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 mt-1"
-                                    onClick={() => handleDischargePatient(bed)}
-                                    disabled={isDischarging}
+                                    className="w-full h-7 text-[11px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 mt-1 gap-1"
+                                    onClick={() => {
+                                      setSelectedBedForDischarge(bed);
+                                      setDischargeModalOpen(true);
+                                    }}
                                   >
-                                    <LogOut className="w-3 h-3 mr-1" />
-                                    Discharge / Release
+                                    <LogOut className="w-3 h-3" />
+                                    Discharge / Settle
                                   </Button>
                                 </div>
                               ) : (
-                                <p className="text-[11px] text-muted-foreground mt-2">
-                                  Ready for admission
-                                </p>
+                                <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between">
+                                  <span className="text-[10px] text-emerald-600 font-medium">
+                                    Ready for patient
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-[10px] text-primary hover:text-primary hover:bg-primary/10"
+                                    onClick={() => {
+                                      setSelectedVisitForAdmission(null);
+                                      setAssignModalOpen(true);
+                                    }}
+                                  >
+                                    Admit Here
+                                  </Button>
+                                </div>
                               )}
                             </div>
                           );
@@ -360,7 +412,7 @@ export default function BedManagement() {
       </div>
 
       {/* Assignment Modal */}
-      {selectedVisitForAdmission && (
+      {assignModalOpen && (
         <RoomBedServiceModal
           open={assignModalOpen}
           onOpenChange={(val) => {
@@ -370,8 +422,34 @@ export default function BedManagement() {
           visit={selectedVisitForAdmission}
           onAssigned={() => {
             queryClient.invalidateQueries({ queryKey: ['beds'] });
+            queryClient.invalidateQueries({ queryKey: ['rooms'] });
             queryClient.invalidateQueries({ queryKey: ['visits'] });
+            queryClient.invalidateQueries({ queryKey: ['bed_assignments'] });
             setSelectedVisitForAdmission(null);
+          }}
+        />
+      )}
+
+      {/* Discharge & Settlement Modal */}
+      {selectedBedForDischarge && (
+        <InpatientDischargeModal
+          open={dischargeModalOpen}
+          onOpenChange={(val) => {
+            setDischargeModalOpen(val);
+            if (!val) setSelectedBedForDischarge(null);
+          }}
+          bed={selectedBedForDischarge}
+          room={rooms.find(r => String(r.id) === String(selectedBedForDischarge.room_id))}
+          activeAssignment={assignments.find(a => 
+            String(a.bed_id) === String(selectedBedForDischarge.id) && 
+            (a.status === 'occupied' || a.status === 'active' || !a.discharge_date)
+          )}
+          onDischarged={() => {
+            queryClient.invalidateQueries({ queryKey: ['beds'] });
+            queryClient.invalidateQueries({ queryKey: ['rooms'] });
+            queryClient.invalidateQueries({ queryKey: ['bed_assignments'] });
+            queryClient.invalidateQueries({ queryKey: ['visits'] });
+            setSelectedBedForDischarge(null);
           }}
         />
       )}
