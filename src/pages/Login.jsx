@@ -13,11 +13,12 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { useHospitalBranding } from "@/hooks/useHospitalBranding";
 
 const STAFF_TYPES = [
-  { value: "doctor", label: "Doctor ▼", icon: Stethoscope, role: "doctor" },
-  { value: "nurse", label: "Nurse ▼", icon: Activity, role: "nurse" },
-  { value: "lab_technician", label: "Lab ▼", icon: FlaskConical, role: "lab_technician" },
-  { value: "receptionist", label: "Reception ▼", icon: UserPlus, role: "receptionist" },
-  { value: "pharmacist", label: "Pharmacy ▼", icon: Pill, role: "pharmacist" },
+  { value: "doctor", label: "Doctor", icon: Stethoscope, role: "doctor" },
+  { value: "nurse", label: "Nurse", icon: Activity, role: "nurse" },
+  { value: "lab_technician", label: "Lab", icon: FlaskConical, role: "lab_technician" },
+  { value: "receptionist", label: "Reception", icon: UserPlus, role: "receptionist" },
+  { value: "pharmacist", label: "Pharmacy", icon: Pill, role: "pharmacist" },
+  { value: "accountant", label: "Billing", icon: Receipt, role: "accountant" },
   { value: "owner", label: "Owner/Admin", icon: UserCheck, role: "owner" },
 ];
 
@@ -98,6 +99,18 @@ export default function Login() {
     }
   };
 
+  const handleEmailChange = (val) => {
+    setEmail(val);
+    const matched = allStaff.find(s => s.email?.toLowerCase() === val.trim().toLowerCase());
+    if (matched) {
+      const matchedRoleType = matched.role === 'admin' ? 'owner' : matched.role;
+      if (matchedRoleType !== staffType && STAFF_TYPES.some(t => t.value === matchedRoleType)) {
+        setStaffType(matchedRoleType);
+      }
+      setSelectedStaffId(String(matched.id));
+    }
+  };
+
   // If already authenticated and not loading, navigate immediately to authorized portal
   useEffect(() => {
     if (!isLoadingAuth && isAuthenticated && user?.role) {
@@ -112,13 +125,11 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      // Find selected staff member to verify targeted credentials
-      const selectedMember = allStaff.find(s => s.email?.toLowerCase() === email.trim().toLowerCase());
-      if (selectedMember && selectedMember.role !== staffType && !(staffType === 'owner' && (selectedMember.role === 'owner' || selectedMember.role === 'admin'))) {
-        throw new Error(`Access denied. Credentials for ${selectedMember.full_name} cannot be used in the ${staffType} workspace.`);
-      }
+      const cleanEmail = email.trim().toLowerCase();
+      const selectedMember = allStaff.find(s => s.email?.toLowerCase() === cleanEmail);
+      const targetRole = selectedMember ? (selectedMember.role === 'admin' ? 'owner' : selectedMember.role) : staffType;
 
-      const profile = await login(email, credential, staffType);
+      const profile = await login(cleanEmail, credential, targetRole);
       const normalizedRole = profile?.role ? profile.role.toLowerCase().trim() : '';
       const destination = ROLE_ROUTES[normalizedRole] || "/admin";
       navigate(destination, { replace: true });
@@ -129,7 +140,8 @@ export default function Login() {
     }
   };
 
-  const selectedMemberData = activeStaffForType.find(s => String(s.id) === String(selectedStaffId));
+  const selectedMemberData = allStaff.find(s => s.email?.toLowerCase() === email.trim().toLowerCase()) ||
+    activeStaffForType.find(s => String(s.id) === String(selectedStaffId));
 
   return (
     <AuthLayout
@@ -155,7 +167,7 @@ export default function Login() {
       {/* Staff-Type Selector Tabs */}
       <div className="space-y-3 mb-5">
         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Staff Role</Label>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
           {STAFF_TYPES.map((type) => {
             const Icon = type.icon;
             const isSelected = staffType === type.value;
@@ -250,7 +262,7 @@ export default function Login() {
               autoComplete="email"
               placeholder="name@grandhorizonhospital.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               className="pl-10 h-11"
               required
             />

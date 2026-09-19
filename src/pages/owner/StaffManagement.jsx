@@ -11,6 +11,7 @@ import { UserPlus, Search, Pencil, Trash2, CheckCircle2, Clock, KeyRound, Copy, 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabase';
 
 const HOSPITAL_DOMAIN = 'grandhorizonhospital.com';
 
@@ -210,6 +211,17 @@ export default function StaffManagement() {
           password_set: false,
         });
         staffId = newStaff.id;
+
+        // Ensure Supabase Auth user is provisioned for seamless Hospital Email + Code login
+        try {
+          await supabase.auth.signUp({
+            email: form.email.trim().toLowerCase(),
+            password: 'Hospital@2026',
+          });
+        } catch (authErr) {
+          console.warn('[StaffManagement] Auth provisioning note:', authErr);
+        }
+
         setGeneratedCreds({
           name: form.full_name,
           email: form.email,
