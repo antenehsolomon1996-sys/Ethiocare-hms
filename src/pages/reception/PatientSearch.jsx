@@ -225,17 +225,33 @@ export default function PatientSearch() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Patient Search & Management</h1>
           <p className="text-sm text-muted-foreground">
-            Search patient records, view complete clinical histories, add historical archives, and register for doctor visits.
+            Search patient records, view complete clinical histories, digitize old paper charts, and register for doctor visits.
           </p>
         </div>
 
-        <Button 
-          onClick={() => navigate('/reception/register')}
-          className="gap-2 shrink-0 self-start sm:self-auto"
-        >
-          <UserPlus className="w-4 h-4" />
-          Register New Patient
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setSelected(null);
+              setEditingRecord(null);
+              setHistoricalModalOpen(true);
+            }}
+            className="gap-2 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 font-medium"
+          >
+            <BookOpen className="w-4 h-4" />
+            Import Old Paper Patient File
+          </Button>
+
+          <Button 
+            onClick={() => navigate('/reception/register')}
+            className="gap-2"
+          >
+            <UserPlus className="w-4 h-4" />
+            Register New Patient
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -266,17 +282,31 @@ export default function PatientSearch() {
                 {searched ? `No patient found matching "${query}"` : 'No patients registered yet'}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                If this is a new patient or someone with previous paper records, register them first.
+                If this is a new live patient or a patient with previous paper records, choose an option below.
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              className="gap-2 text-xs"
-              onClick={() => navigate('/reception/register')}
-            >
-              <UserPlus className="w-4 h-4" />
-              Register Patient Now
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <Button 
+                variant="outline" 
+                className="gap-2 text-xs border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                onClick={() => {
+                  setSelected(null);
+                  setEditingRecord(null);
+                  setHistoricalModalOpen(true);
+                }}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                Import Old Paper Patient File
+              </Button>
+              <Button 
+                variant="default" 
+                className="gap-2 text-xs"
+                onClick={() => navigate('/reception/register')}
+              >
+                <UserPlus className="w-4 h-4" />
+                Register Patient Now
+              </Button>
+            </div>
           </div>
         ) : (
           filtered.map(p => {
@@ -678,22 +708,23 @@ export default function PatientSearch() {
       </Dialog>
 
       {/* Import / Edit Historical Paper Record Modal */}
-      {selected && (
-        <AddHistoricalRecordModal
-          open={historicalModalOpen}
-          onOpenChange={(val) => {
-            setHistoricalModalOpen(val);
-            if (!val) setEditingRecord(null);
-          }}
-          patient={selected}
-          recordToEdit={editingRecord}
-          onRecordAdded={() => {
-            queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
+      <AddHistoricalRecordModal
+        open={historicalModalOpen}
+        onOpenChange={(val) => {
+          setHistoricalModalOpen(val);
+          if (!val) setEditingRecord(null);
+        }}
+        patient={selected}
+        recordToEdit={editingRecord}
+        onRecordAdded={() => {
+          queryClient.invalidateQueries({ queryKey: ['patients'] });
+          queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
+          if (selected?.id) {
             queryClient.invalidateQueries({ queryKey: ['patientHistory', selected.id] });
-            setEditingRecord(null);
-          }}
-        />
-      )}
+          }
+          setEditingRecord(null);
+        }}
+      />
     </div>
   );
 }

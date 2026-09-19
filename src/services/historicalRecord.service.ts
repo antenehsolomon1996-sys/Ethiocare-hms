@@ -173,6 +173,109 @@ export const historicalRecordService = {
   },
 
   /**
+   * Import a completely new paper-only patient file along with one or more historical visits.
+   * This is used when a patient was treated in past months/years before EthioCare HMS was installed.
+   * Does NOT create any current visit, doctor queue token, or billing payment.
+   */
+  async createPaperPatientWithVisits(
+    patientData: {
+      full_name: string;
+      gender?: string;
+      age?: number | string | null;
+      date_of_birth?: string | null;
+      address?: string | null;
+      phone?: string | null;
+      emergency_contact_name?: string | null;
+      emergency_contact_phone?: string | null;
+      paper_chart_id?: string | null;
+    },
+    visits: Array<Omit<HistoricalRecordPayload, 'patient_id' | 'patient_name'>>,
+    recordedBy: string = 'Reception'
+  ): Promise<{ patient: any; records: any[] }> {
+    if (!patientData.full_name?.trim()) {
+      throw new Error('Patient full name from paper file is required');
+    }
+    if (!visits || visits.length === 0) {
+      throw new Error('At least one historical visit record is required');
+    }
+
+    // Validate each visit payload
+    for (let i = 0; i < visits.length; i++) {
+      const v = visits[i];
+      const validation = this.validate({
+        ...v,
+        patient_id: 'TEMP_VALIDATION',
+        patient_name: patientData.full_name
+      });
+      if (!validation.valid) {
+        throw new Error(`Visit #${i + 1}: ${validation.error}`);
+      }
+    }
+
+    const digitizer = recordedBy || 'Reception';
+    const digitizeTime = new Date().toISOString();
+
+    // Sort visits by date to find earliest visit date for registration_date
+    const sortedVisits = [...visits].sort((a, b) => a.visit_date.localeCompare(b.visit_date));
+    const earliestDate = sortedVisits[0].visit_date;
+
+    // Generate standard patient ID PT-YYMMDD-XXXX
+    const dStr = earliestDate ? earliestDate.replace(/-/g, '').slice(2, 8) : new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const randNum = Math.floor(1000 + Math.random() * 9000);
+    const generatedPatientId = `PT-${dStr}-${randNum}`;
+
+    // 1. Create Patient Entity Record (without live queue or billing)
+    const newPatient = await ethioCareClient.entities.Patient.create({
+      full_name: patientData.full_name.trim(),
+      gender: patientData.gender || 'Male',
+      age: patientData.age ? parseInt(String(patientData.age)) : null,
+      date_of_birth: patientData.date_of_birth?.trim() || null,
+      address: patientData.address?.trim() || null,
+      phone: patientData.phone?.trim() || 'N/A (Paper File)',
+      emergency_contact_name: patientData.emergency_contact_name?.trim() || null,
+      emergency_contact_phone: patientData.emergency_contact_phone?.trim() || null,
+      patient_id: generatedPatientId,
+      registration_date: earliestDate || digitizeTime.slice(0, 10),
+      status: 'active'
+    });
+
+    logAudit({
+      action: 'IMPORT_PAPER_PATIENT_FILE',
+      performedBy: digitizer,
+      details: `Digitized and imported new paper patient file for ${newPatient.full_name} (${newPatient.patient_id}) with ${visits.length} historical visit(s)`,
+      metadata: {
+        patient_id: newPatient.id,
+        patient_hospital_id: newPatient.patient_id,
+        patient_name: newPatient.full_name,
+        visit_count: visits.length,
+        digitized_by: digitizer,
+        digitized_at: digitizeTime
+      }
+    });
+
+    // 2. Create all historical visit records for this patient
+    const createdRecords: any[] = [];
+    for (const v of visits) {
+      const record = await this.createHistoricalRecord({
+        ...v,
+        patient_id: newPatient.id,
+        patient_name: newPatient.full_name,
+        patient_phone: newPatient.phone,
+        patient_gender: newPatient.gender,
+        patient_dob: newPatient.date_of_birth,
+        digitized_by: digitizer,
+        digitized_at: digitizeTime
+      }, digitizer);
+      createdRecords.push(record);
+    }
+
+    return {
+      patient: newPatient,
+      records: createdRecords
+    };
+  },
+
+  /**
    * Update an existing digitized historical record in patient_history.
    */
   async updateHistoricalRecord(

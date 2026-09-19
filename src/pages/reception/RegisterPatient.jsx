@@ -69,6 +69,7 @@ export default function RegisterPatient() {
   });
 
   const [historicalModalOpen, setHistoricalModalOpen] = useState(false);
+  const [selectedPatientForHistory, setSelectedPatientForHistory] = useState(null);
 
   const doctors = useMemo(() => buildDoctorList(doctorEntities, staff), [doctorEntities, staff]);
 
@@ -411,7 +412,10 @@ export default function RegisterPatient() {
                 type="button"
                 variant="outline"
                 className="w-full h-10 gap-2 text-xs border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-                onClick={() => setHistoricalModalOpen(true)}
+                onClick={() => {
+                  setSelectedPatientForHistory(created);
+                  setHistoricalModalOpen(true);
+                }}
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 Import Paper History for this Patient
@@ -428,6 +432,7 @@ export default function RegisterPatient() {
             onRecordAdded={() => {
               queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
               queryClient.invalidateQueries({ queryKey: ['patientHistory', created.id] });
+              queryClient.invalidateQueries({ queryKey: ['patients'] });
             }}
           />
         )}
@@ -555,9 +560,25 @@ export default function RegisterPatient() {
             Create patient medical file, apply the 30-day treatment rule, and initiate the consultation workflow.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleResetForm} className="self-start sm:self-auto gap-1.5">
-          <RefreshCw className="w-3.5 h-3.5" /> Clear Form
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedPatientForHistory(null);
+              setHistoricalModalOpen(true);
+            }}
+            className="gap-1.5 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 font-medium"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            Import Old Paper Patient File
+          </Button>
+
+          <Button variant="outline" size="sm" onClick={handleResetForm} className="gap-1.5">
+            <RefreshCw className="w-3.5 h-3.5" /> Clear Form
+          </Button>
+        </div>
       </div>
 
       {/* Matched Existing Patient Alert / 30-Day Rule Banner */}
@@ -586,6 +607,7 @@ export default function RegisterPatient() {
                   variant="outline"
                   onClick={() => {
                     handleUseExistingPatient(matchedExistingPatient);
+                    setSelectedPatientForHistory(matchedExistingPatient);
                     setHistoricalModalOpen(true);
                   }}
                   className="gap-1 text-xs border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
@@ -793,17 +815,19 @@ export default function RegisterPatient() {
         </CardContent>
       </Card>
 
-      {(matchedExistingPatient || (existingPatientId ? patients.find(p => p.id === existingPatientId) : null)) && (
-        <AddHistoricalRecordModal
-          open={historicalModalOpen}
-          onOpenChange={setHistoricalModalOpen}
-          patient={matchedExistingPatient || patients.find(p => p.id === existingPatientId)}
-          onRecordAdded={() => {
-            queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
-            queryClient.invalidateQueries({ queryKey: ['patients'] });
-          }}
-        />
-      )}
+      <AddHistoricalRecordModal
+        open={historicalModalOpen}
+        onOpenChange={(val) => {
+          setHistoricalModalOpen(val);
+          if (!val) setSelectedPatientForHistory(null);
+        }}
+        patient={selectedPatientForHistory || matchedExistingPatient || (existingPatientId ? patients.find(p => p.id === existingPatientId) : null)}
+        onRecordAdded={() => {
+          queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
+          queryClient.invalidateQueries({ queryKey: ['patients'] });
+          setSelectedPatientForHistory(null);
+        }}
+      />
     </div>
   );
 }
