@@ -31,15 +31,15 @@ assert(indexCssFile.includes('overscroll-behavior-y: none'), 'Pull-to-refresh ov
 // 3. Check PortalLayout safe areas & z-index
 const portalLayoutFile = readFileSync(resolve('src/components/layout/PortalLayout.jsx'), 'utf8');
 assert(portalLayoutFile.includes('z-30'), 'Top navbar has explicit z-30 stacking');
-assert(portalLayoutFile.includes('mobile-bottom-nav-spacer'), 'Main content container has real DOM mobile-bottom-nav-spacer for bottom nav');
+assert(portalLayoutFile.includes('<MobileFloatingNav role={role} />'), 'PortalLayout mounts shared <MobileFloatingNav role={role} />');
 assert(portalLayoutFile.includes('min-h-[44px] min-w-[44px]'), 'Mobile menu trigger button has >= 44px touch target');
 assert(portalLayoutFile.includes('loading="lazy"'), 'Brand logo is lazy-loaded with decoding="async"');
 
-// 4. Check BottomTabBar
-const bottomTabBarFile = readFileSync(resolve('src/components/layout/BottomTabBar.jsx'), 'utf8');
-assert(bottomTabBarFile.includes('z-40'), 'Bottom nav bar has explicit z-40 stacking');
-assert(bottomTabBarFile.includes('var(--mobile-bottom-nav-height'), 'Bottom nav bar includes dynamic safe-area height via CSS variable');
-assert(bottomTabBarFile.includes('min-h-[52px]'), 'Bottom nav tab buttons have >= 52px touch targets');
+// 4. Check MobileFloatingNav
+const floatingNavFile = readFileSync(resolve('src/components/layout/MobileFloatingNav.jsx'), 'utf8');
+assert(floatingNavFile.includes('z-40'), 'Floating nav rail has explicit z-40 stacking');
+assert(floatingNavFile.includes('right-3'), 'Floating nav rail is positioned on the right side');
+assert(floatingNavFile.includes('min-h-[44px] min-w-[44px]'), 'Floating nav buttons have >= 44px touch targets');
 
 // 5. Check ImageUploadField
 assert(existsSync(resolve('src/components/common/ImageUploadField.jsx')), 'ImageUploadField component exists');

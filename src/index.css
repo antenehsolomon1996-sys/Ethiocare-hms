@@ -161,9 +161,6 @@ html, body {
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
-  --mobile-bottom-nav-height: 3.75rem;
-  --mobile-bottom-spacer-extra: 2rem;
-  --mobile-bottom-safe-space: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--mobile-bottom-spacer-extra));
 }
 nav, button, [role="tab"], [role="button"], a {
   -webkit-user-select: none;
@@ -178,26 +175,6 @@ p, span.content, .medical-notes, textarea, input { user-select: text; }
 }
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-.pb-safe-nav {
-  padding-bottom: var(--mobile-bottom-safe-space);
-}
-
-/* Real Layout Bottom Spacer for Fixed Mobile Navigation */
-.mobile-bottom-nav-spacer {
-  display: block;
-  width: 100%;
-  height: var(--mobile-bottom-safe-space);
-  min-height: var(--mobile-bottom-safe-space);
-  flex-shrink: 0;
-  pointer-events: none;
-}
-@media (min-width: 768px) {
-  .mobile-bottom-nav-spacer {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
-  }
 }
 
 /* ===== Premium Design System ===== */

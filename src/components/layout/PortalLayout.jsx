@@ -1,7 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import Sidebar from './Sidebar';
-import BottomTabBar from './BottomTabBar';
+import MobileFloatingNav from './MobileFloatingNav';
 import ThemeToggle from './ThemeToggle';
 import HealthcareBackground from './HealthcareBackground';
 import PullToRefresh from '@/components/common/PullToRefresh';
@@ -391,7 +390,7 @@ export default function PortalLayout({ role }) {
         </div>
 
         {/* Page content */}
-        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scroll-smooth overscroll-y-none p-3.5 sm:p-4 md:p-6 lg:p-8 md:pb-8 lg:pb-12">
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scroll-smooth overscroll-y-none p-3.5 sm:p-4 md:p-6 lg:p-8 pb-8 md:pb-8 lg:pb-12">
           <PullToRefresh onRefresh={handleRefresh}>
             <div className="flex flex-col min-h-full">
               <AnimatePresence mode="wait">
@@ -408,19 +407,13 @@ export default function PortalLayout({ role }) {
                   </ErrorBoundary>
                 </motion.div>
               </AnimatePresence>
-
-              {/* Real Layout Bottom Spacer for Fixed Mobile Navigation */}
-              <div
-                aria-hidden="true"
-                className="mobile-bottom-nav-spacer md:hidden"
-              />
             </div>
           </PullToRefresh>
         </main>
       </div>
 
-      {/* Mobile bottom tab bar */}
-      <BottomTabBar role={role} />
+      {/* Mobile vertical floating icon navigation */}
+      <MobileFloatingNav role={role} />
 
       {/* Delete Account Dialog */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
