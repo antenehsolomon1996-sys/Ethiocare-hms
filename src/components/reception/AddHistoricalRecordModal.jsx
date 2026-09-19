@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { ethioCareClient } from '@/api/ethioCareClient';
 import { historicalRecordService } from '@/services/historicalRecord.service';
+import { useAuth } from '@/lib/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,15 +13,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calendar, Stethoscope, FileText, FlaskConical, 
-  Pill, Activity, Clock, ShieldCheck, AlertCircle, Save, PlusCircle
+  Pill, Activity, Clock, ShieldCheck, AlertCircle, Save, PlusCircle,
+  FileSpreadsheet, UserCheck, BookOpen
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { buildDoctorList } from '@/lib/doctorUtils';
 
-export default function AddHistoricalRecordModal({ open, onOpenChange, patient, onRecordAdded }) {
+export default function AddHistoricalRecordModal({ 
+  open, 
+  onOpenChange, 
+  patient, 
+  recordToEdit = null,
+  onRecordAdded 
+}) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const maxDate = format(new Date(), 'yyyy-MM-dd');
+  const isEditing = Boolean(recordToEdit?.id);
 
   // Load doctors for easy selection
   const { data: staff = [] } = useQuery({
@@ -40,7 +50,7 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
   const [isCustomDoctor, setIsCustomDoctor] = useState(false);
 
   const [form, setForm] = useState({
-    visit_date: '', // EXACT original treatment date
+    visit_date: '', // EXACT original treatment date written on the paper file
     doctor_name: '',
     doctor_specialty: 'General Medicine',
     diagnosis: '',
@@ -59,6 +69,58 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
     weight: '',
     pulse: ''
   });
+
+  // Pre-fill form when recordToEdit is provided, or reset when opened fresh
+  useEffect(() => {
+    if (open && recordToEdit) {
+      const docName = recordToEdit.doctor_name || '';
+      const isKnownDoc = activeDoctors.some(d => d.full_name === docName);
+
+      setForm({
+        visit_date: recordToEdit.visit_date || '',
+        doctor_name: docName,
+        doctor_specialty: recordToEdit.doctor_specialty || 'General Medicine',
+        diagnosis: recordToEdit.diagnosis || '',
+        disease: recordToEdit.disease || '',
+        symptoms: recordToEdit.symptoms || '',
+        examination_notes: recordToEdit.examination_notes || '',
+        treatment: recordToEdit.treatment || '',
+        lab_tests: recordToEdit.lab_tests || '',
+        lab_results: recordToEdit.lab_results || '',
+        nurse_records: recordToEdit.nurse_records || '',
+        medicines: recordToEdit.medicines || recordToEdit.prescription || '',
+        medical_reports: recordToEdit.medical_reports || '',
+        notes: recordToEdit.notes || '',
+        blood_pressure: recordToEdit.blood_pressure || '',
+        temperature: recordToEdit.temperature || '',
+        weight: recordToEdit.weight || '',
+        pulse: recordToEdit.pulse || ''
+      });
+      setIsCustomDoctor(!isKnownDoc && Boolean(docName));
+    } else if (open && !recordToEdit) {
+      setForm({
+        visit_date: '',
+        doctor_name: '',
+        doctor_specialty: 'General Medicine',
+        diagnosis: '',
+        disease: '',
+        symptoms: '',
+        examination_notes: '',
+        treatment: '',
+        lab_tests: '',
+        lab_results: '',
+        nurse_records: '',
+        medicines: '',
+        medical_reports: '',
+        notes: '',
+        blood_pressure: '',
+        temperature: '',
+        weight: '',
+        pulse: ''
+      });
+      setIsCustomDoctor(false);
+    }
+  }, [open, recordToEdit]);
 
   const handleFieldChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -87,13 +149,13 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
     }
 
     if (!form.visit_date) {
-      toast.error('Original treatment date is required');
+      toast.error('Original treatment date from paper file is required');
       setActiveTab('clinical');
       return;
     }
 
     if (!form.doctor_name?.trim()) {
-      toast.error('Attending doctor name is required');
+      toast.error('Attending physician name is required');
       setActiveTab('clinical');
       return;
     }
@@ -106,13 +168,15 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
 
     setIsSubmitting(true);
     try {
+      const staffIdentifier = user?.full_name || user?.email || 'Receptionist';
+
       const payload = {
         patient_id: patient.id,
         patient_name: patient.full_name,
         patient_phone: patient.phone || null,
         patient_gender: patient.gender || null,
         patient_dob: patient.date_of_birth || null,
-        visit_date: form.visit_date,
+        visit_date: form.visit_date.trim(),
         doctor_name: form.doctor_name.trim(),
         doctor_specialty: form.doctor_specialty?.trim() || null,
         diagnosis: form.diagnosis.trim(),
@@ -129,38 +193,22 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
         blood_pressure: form.blood_pressure?.trim() || null,
         temperature: form.temperature?.trim() || null,
         weight: form.weight?.trim() || null,
-        pulse: form.pulse?.trim() || null
+        pulse: form.pulse?.trim() || null,
+        digitized_by: staffIdentifier
       };
 
-      await historicalRecordService.createHistoricalRecord(payload, 'Receptionist');
+      if (isEditing && recordToEdit?.id) {
+        await historicalRecordService.updateHistoricalRecord(recordToEdit.id, payload, staffIdentifier);
+        toast.success(`Paper record from ${form.visit_date} updated successfully for ${patient.full_name}`);
+      } else {
+        await historicalRecordService.createHistoricalRecord(payload, staffIdentifier);
+        toast.success(`Paper record from ${form.visit_date} digitized and imported for ${patient.full_name}`);
+      }
 
       queryClient.invalidateQueries({ queryKey: ['patientHistory', patient.id] });
+      queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
       queryClient.invalidateQueries({ queryKey: ['patients'] });
       queryClient.invalidateQueries({ queryKey: ['patientVisits', patient.id] });
-
-      toast.success(`Historical visit from ${form.visit_date} recorded successfully for ${patient.full_name}`);
-
-      // Reset form
-      setForm({
-        visit_date: '',
-        doctor_name: '',
-        doctor_specialty: 'General Medicine',
-        diagnosis: '',
-        disease: '',
-        symptoms: '',
-        examination_notes: '',
-        treatment: '',
-        lab_tests: '',
-        lab_results: '',
-        nurse_records: '',
-        medicines: '',
-        medical_reports: '',
-        notes: '',
-        blood_pressure: '',
-        temperature: '',
-        weight: '',
-        pulse: ''
-      });
 
       if (onRecordAdded) {
         onRecordAdded();
@@ -168,7 +216,7 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
       onOpenChange(false);
     } catch (err) {
       console.error('[AddHistoricalRecordModal] Submission error:', err);
-      toast.error(err.message || 'Failed to save historical record');
+      toast.error(err.message || 'Failed to save historical paper record');
     } finally {
       setIsSubmitting(false);
     }
@@ -180,22 +228,31 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
         {/* Header */}
         <DialogHeader className="p-4 sm:p-5 border-b border-border bg-card/60 shrink-0">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-primary font-semibold text-xs tracking-wider uppercase">
-              <Clock className="w-4 h-4" />
-              Historical Patient Record
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-semibold text-xs tracking-wider uppercase">
+              <BookOpen className="w-4 h-4" />
+              Historical / Paper Record Digitization
             </div>
-            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+            <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
               Pre-EthioCare HMS Archive
             </Badge>
           </div>
           <DialogTitle className="text-lg sm:text-xl font-bold mt-1 text-foreground">
-            Add Historical Hospital Visit
+            {isEditing ? 'Edit Historical / Paper Record' : 'Import Paper History'}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Record previous hospital treatments for <strong>{patient?.full_name}</strong> ({patient?.patient_id || 'ID Pending'}).
-            The exact original treatment date will be permanently preserved.
+            Digitize previous physical chart visits for <strong>{patient?.full_name}</strong> ({patient?.patient_id || 'ID Pending'}).
+            The exact treatment date written on the paper file will be permanently preserved.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Distinctive Notice: Not a Current Visit */}
+        <div className="px-4 sm:px-5 py-2.5 bg-amber-500/10 border-b border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2 shrink-0">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+          <div className="leading-snug">
+            <strong>Historical Medical History Only:</strong> This digitizes a patient's past treatment before EthioCare existed.
+            It does <strong>NOT</strong> create a current visit, does <strong>NOT</strong> generate a doctor queue number, and does <strong>NOT</strong> create a registration payment.
+          </div>
+        </div>
 
         {/* Form Body with Scrollable Area */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
@@ -221,7 +278,7 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
                 <div className="space-y-1.5">
                   <Label htmlFor="visit_date" className="text-xs font-semibold flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-primary" />
-                    Exact Original Treatment Date <span className="text-rose-500">*</span>
+                    Exact Date Written on Paper <span className="text-rose-500">*</span>
                   </Label>
                   <Input
                     id="visit_date"
@@ -233,7 +290,7 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
                     required
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Original hospital treatment date from the physical chart.
+                    Original treatment date from the physical chart (never today's data entry date).
                   </p>
                 </div>
 
@@ -422,7 +479,7 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
               <div className="border border-border/80 rounded-xl p-3.5 bg-muted/30 space-y-2.5">
                 <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                   <Activity className="w-3.5 h-3.5 text-rose-500" />
-                  Historical Vital Signs (Optional)
+                  Historical Vital Signs Recorded on Paper (Optional)
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <div className="space-y-1">
@@ -470,7 +527,7 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
               <div className="space-y-1.5">
                 <Label htmlFor="medicines" className="text-xs font-semibold flex items-center gap-1.5">
                   <Pill className="w-3.5 h-3.5 text-primary" />
-                  Medicines & Medications Given / Prescribed
+                  Medicines & Medications Prescribed / Administered
                 </Label>
                 <Textarea
                   id="medicines"
@@ -485,7 +542,7 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
               <div className="space-y-1.5">
                 <Label htmlFor="medical_reports" className="text-xs font-medium flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-primary" />
-                  Medical Reports & Archive Reference
+                  Paper Chart / Ledger Archive Reference
                 </Label>
                 <Input
                   id="medical_reports"
@@ -530,10 +587,12 @@ export default function AddHistoricalRecordModal({ open, onOpenChange, patient, 
             size="sm"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="gap-1.5"
+            className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
           >
             <Save className="w-3.5 h-3.5" />
-            {isSubmitting ? 'Saving Record...' : 'Save Historical Record'}
+            {isSubmitting 
+              ? (isEditing ? 'Updating Record...' : 'Importing Record...') 
+              : (isEditing ? 'Update Paper Record' : 'Import Paper Record')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -14,7 +14,7 @@ import AddHistoricalRecordModal from '@/components/reception/AddHistoricalRecord
 import { 
   Search, User, Phone, Hash, Calendar, Pencil, 
   Send, ChevronDown, Clock, PlusCircle, UserPlus, 
-  AlertCircle, CheckCircle2, ShieldCheck, History
+  AlertCircle, CheckCircle2, ShieldCheck, History, BookOpen
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -32,6 +32,7 @@ export default function PatientSearch() {
   const [editForm, setEditForm] = useState({});
   const [queueOpen, setQueueOpen] = useState(false);
   const [historicalModalOpen, setHistoricalModalOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
 
   // Queries for live data
@@ -314,11 +315,14 @@ export default function PatientSearch() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => setHistoricalModalOpen(true)}
+                          onClick={() => {
+                            setEditingRecord(null);
+                            setHistoricalModalOpen(true);
+                          }}
                           className="gap-1.5 text-xs text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
                         >
-                          <History className="w-3.5 h-3.5" />
-                          Add Historical Record
+                          <BookOpen className="w-3.5 h-3.5" />
+                          Import Paper History
                         </Button>
 
                         <Button 
@@ -439,7 +443,14 @@ export default function PatientSearch() {
                         patientId={p.id} 
                         patientName={p.full_name}
                         allowAddHistorical={true}
-                        onAddHistorical={() => setHistoricalModalOpen(true)}
+                        onAddHistorical={() => {
+                          setEditingRecord(null);
+                          setHistoricalModalOpen(true);
+                        }}
+                        onEditHistorical={(record) => {
+                          setEditingRecord(record);
+                          setHistoricalModalOpen(true);
+                        }}
                       />
                     </div>
                   </div>
@@ -608,15 +619,20 @@ export default function PatientSearch() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Historical Record Modal */}
+      {/* Import / Edit Historical Paper Record Modal */}
       {selected && (
         <AddHistoricalRecordModal
           open={historicalModalOpen}
-          onOpenChange={setHistoricalModalOpen}
+          onOpenChange={(val) => {
+            setHistoricalModalOpen(val);
+            if (!val) setEditingRecord(null);
+          }}
           patient={selected}
+          recordToEdit={editingRecord}
           onRecordAdded={() => {
             queryClient.invalidateQueries({ queryKey: ['patientHistoryAll'] });
             queryClient.invalidateQueries({ queryKey: ['patientHistory', selected.id] });
+            setEditingRecord(null);
           }}
         />
       )}

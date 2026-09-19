@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { UserPlus, Send, CheckCircle2, AlertCircle, Clock, ArrowRight, UserCheck, Stethoscope, RefreshCw, FileText, History } from 'lucide-react';
+import { UserPlus, Send, CheckCircle2, AlertCircle, Clock, ArrowRight, UserCheck, Stethoscope, RefreshCw, FileText, History, BookOpen } from 'lucide-react';
 import { buildDoctorList } from '@/lib/doctorUtils';
 import { notificationService } from '@/services/notification.service';
 import { patientFeeService } from '@/services/patientFee.service';
@@ -389,8 +389,8 @@ export default function RegisterPatient() {
                 className="w-full h-10 gap-2 text-xs border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
                 onClick={() => setHistoricalModalOpen(true)}
               >
-                <History className="w-3.5 h-3.5" />
-                Add Previous / Historical Hospital Records for this Patient
+                <BookOpen className="w-3.5 h-3.5" />
+                Import Paper History for this Patient
               </Button>
             </div>
           </CardContent>
@@ -532,8 +532,8 @@ export default function RegisterPatient() {
                   }}
                   className="gap-1 text-xs border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
                 >
-                  <History className="w-3.5 h-3.5" />
-                  Add Past Records
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Import Paper History
                 </Button>
                 <Button
                   type="button"

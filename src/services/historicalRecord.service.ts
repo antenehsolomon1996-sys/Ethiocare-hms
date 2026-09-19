@@ -3,6 +3,7 @@ import { logAudit } from '@/lib/auditLogger';
 import { isValid, parseISO, isAfter, startOfDay } from 'date-fns';
 
 export interface HistoricalRecordPayload {
+  id?: string;
   patient_id: string;
   patient_name: string;
   patient_phone?: string | null;
@@ -26,10 +27,12 @@ export interface HistoricalRecordPayload {
   temperature?: string | null;
   weight?: string | null;
   pulse?: string | null;
+  digitized_by?: string | null;
+  digitized_at?: string | null;
   created_by?: string | null;
 }
 
-export const HISTORICAL_RECORD_TAG = '[HISTORICAL RECORD - PRE-ETHIOCARE HMS]';
+export const HISTORICAL_RECORD_TAG = '[HISTORICAL / PAPER RECORD - PRE-ETHIOCARE HMS]';
 
 export const historicalRecordService = {
   /**
@@ -43,7 +46,7 @@ export const historicalRecordService = {
       return { valid: false, error: 'Patient name is required' };
     }
     if (!data.visit_date?.trim()) {
-      return { valid: false, error: 'Original treatment date is required' };
+      return { valid: false, error: 'Original paper treatment date is required' };
     }
 
     const parsedDate = parseISO(data.visit_date);
@@ -67,8 +70,9 @@ export const historicalRecordService = {
   },
 
   /**
-   * Create a new historical record in patient_history.
+   * Create a new digitized historical paper record in patient_history.
    * Preserves exact original treatment date, attending physician, and all clinical details.
+   * Does NOT create any registration payment or queue entry (medical history only).
    */
   async createHistoricalRecord(
     payload: HistoricalRecordPayload,
@@ -79,8 +83,14 @@ export const historicalRecordService = {
       throw new Error(validation.error || 'Validation failed');
     }
 
-    // Compose formatted notes with machine-readable tag and structured sections
-    const noteSections: string[] = [HISTORICAL_RECORD_TAG];
+    const digitizer = payload.digitized_by || recordedBy || 'Reception';
+    const digitizeTime = new Date().toISOString();
+
+    // Compose formatted notes with machine-readable tag, audit trail, and structured sections
+    const noteSections: string[] = [
+      HISTORICAL_RECORD_TAG,
+      `Digitized From Paper Chart: ${digitizeTime.slice(0, 10)} by ${digitizer}`
+    ];
 
     if (payload.disease?.trim()) {
       noteSections.push(`Specific Disease/Condition: ${payload.disease.trim()}`);
@@ -95,10 +105,10 @@ export const historicalRecordService = {
       noteSections.push(`Nursing Records & Procedures: ${payload.nurse_records.trim()}`);
     }
     if (payload.medical_reports?.trim()) {
-      noteSections.push(`Medical Reports & Physical Ledger Ref: ${payload.medical_reports.trim()}`);
+      noteSections.push(`Paper File / Archive Reference: ${payload.medical_reports.trim()}`);
     }
     if (payload.notes?.trim()) {
-      noteSections.push(`Additional Notes: ${payload.notes.trim()}`);
+      noteSections.push(`Clinical Notes: ${payload.notes.trim()}`);
     }
 
     const combinedNotes = noteSections.join('\n\n');
@@ -124,8 +134,8 @@ export const historicalRecordService = {
       patient_phone: payload.patient_phone?.trim() || null,
       patient_gender: payload.patient_gender || null,
       patient_dob: payload.patient_dob?.trim() || null,
-      visit_id: null, // Null indicates pre-system historical record
-      visit_date: payload.visit_date.trim(), // EXACT original treatment date
+      visit_id: null, // Null explicitly indicates pre-system historical paper record
+      visit_date: payload.visit_date.trim(), // EXACT original treatment date from paper file
       doctor_name: payload.doctor_name.trim(),
       doctor_specialty: payload.doctor_specialty?.trim() || 'General Medicine',
       symptoms: payload.symptoms?.trim() || null,
@@ -145,15 +155,17 @@ export const historicalRecordService = {
     const createdRecord = await ethioCareClient.entities.PatientHistory.create(recordData);
 
     logAudit({
-      action: 'ADD_HISTORICAL_PATIENT_RECORD',
-      performedBy: recordedBy,
-      details: `Added historical record for ${payload.patient_name} (Treatment date: ${payload.visit_date}, Doctor: ${payload.doctor_name}, Diagnosis: ${payload.diagnosis})`,
+      action: 'IMPORT_PAPER_PATIENT_RECORD',
+      performedBy: digitizer,
+      details: `Digitized paper medical record for ${payload.patient_name} (Paper Treatment Date: ${payload.visit_date}, Doctor: ${payload.doctor_name}, Diagnosis: ${payload.diagnosis})`,
       metadata: {
         patient_id: payload.patient_id,
         patient_name: payload.patient_name,
         visit_date: payload.visit_date,
         doctor_name: payload.doctor_name,
-        diagnosis: payload.diagnosis
+        diagnosis: payload.diagnosis,
+        digitized_by: digitizer,
+        digitized_at: digitizeTime
       }
     });
 
@@ -161,7 +173,95 @@ export const historicalRecordService = {
   },
 
   /**
-   * Helper to determine whether a given record in patient_history is an imported historical record.
+   * Update an existing digitized historical record in patient_history.
+   */
+  async updateHistoricalRecord(
+    recordId: string,
+    payload: HistoricalRecordPayload,
+    updatedBy: string = 'Reception'
+  ): Promise<any> {
+    const validation = this.validate(payload);
+    if (!validation.valid) {
+      throw new Error(validation.error || 'Validation failed');
+    }
+
+    const modifier = payload.digitized_by || updatedBy || 'Reception';
+    const updateTime = new Date().toISOString();
+
+    const noteSections: string[] = [
+      HISTORICAL_RECORD_TAG,
+      `Digitized Paper Record (Last modified: ${updateTime.slice(0, 10)} by ${modifier})`
+    ];
+
+    if (payload.disease?.trim()) {
+      noteSections.push(`Specific Disease/Condition: ${payload.disease.trim()}`);
+    }
+    if (payload.examination_notes?.trim()) {
+      noteSections.push(`Examination Findings: ${payload.examination_notes.trim()}`);
+    }
+    if (payload.lab_tests?.trim()) {
+      noteSections.push(`Lab Tests Ordered: ${payload.lab_tests.trim()}`);
+    }
+    if (payload.nurse_records?.trim()) {
+      noteSections.push(`Nursing Records & Procedures: ${payload.nurse_records.trim()}`);
+    }
+    if (payload.medical_reports?.trim()) {
+      noteSections.push(`Paper File / Archive Reference: ${payload.medical_reports.trim()}`);
+    }
+    if (payload.notes?.trim()) {
+      noteSections.push(`Clinical Notes: ${payload.notes.trim()}`);
+    }
+
+    const combinedNotes = noteSections.join('\n\n');
+
+    const combinedDiagnosis = payload.disease?.trim()
+      ? `${payload.diagnosis.trim()} (${payload.disease.trim()})`
+      : payload.diagnosis.trim();
+
+    const combinedLab = [
+      payload.lab_tests?.trim() ? `Tests: ${payload.lab_tests.trim()}` : '',
+      payload.lab_results?.trim() ? `Results: ${payload.lab_results.trim()}` : ''
+    ].filter(Boolean).join('\n') || null;
+
+    const combinedPrescription = payload.medicines?.trim() || null;
+
+    const updateData: Record<string, any> = {
+      visit_date: payload.visit_date.trim(),
+      doctor_name: payload.doctor_name.trim(),
+      doctor_specialty: payload.doctor_specialty?.trim() || 'General Medicine',
+      symptoms: payload.symptoms?.trim() || null,
+      diagnosis: combinedDiagnosis,
+      treatment: payload.treatment?.trim() || null,
+      prescription: combinedPrescription,
+      lab_results: combinedLab,
+      notes: combinedNotes,
+      blood_pressure: payload.blood_pressure?.trim() || null,
+      temperature: payload.temperature?.trim() || null,
+      weight: payload.weight?.trim() || null,
+      pulse: payload.pulse?.trim() || null
+    };
+
+    const updated = await ethioCareClient.entities.PatientHistory.update(recordId, updateData);
+
+    logAudit({
+      action: 'UPDATE_PAPER_PATIENT_RECORD',
+      performedBy: modifier,
+      details: `Updated digitized paper record for ${payload.patient_name} (Treatment Date: ${payload.visit_date}, Doctor: ${payload.doctor_name})`,
+      metadata: {
+        record_id: recordId,
+        patient_id: payload.patient_id,
+        patient_name: payload.patient_name,
+        visit_date: payload.visit_date,
+        modified_by: modifier,
+        modified_at: updateTime
+      }
+    });
+
+    return updated;
+  },
+
+  /**
+   * Helper to determine whether a given record in patient_history is an imported historical/paper record.
    */
   isHistoricalRecord(record: any): boolean {
     if (!record) return false;
@@ -171,7 +271,9 @@ export const historicalRecordService = {
     if (typeof record.notes === 'string' && (
       record.notes.includes(HISTORICAL_RECORD_TAG) ||
       record.notes.includes('HISTORICAL RECORD') ||
-      record.notes.includes('Historical Record')
+      record.notes.includes('Historical Record') ||
+      record.notes.includes('Paper Record') ||
+      record.notes.includes('Paper Chart')
     )) {
       return true;
     }

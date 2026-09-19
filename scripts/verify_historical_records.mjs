@@ -390,11 +390,25 @@ async function runLiveTests() {
     lab_results: 'FBS: 92 mg/dL, Lipid Panel: Desirable',
     blood_pressure: '118/78',
     temperature: '36.8',
-    notes: '[HISTORICAL RECORD - PRE-ETHIOCARE HMS]\nLegacy chart checkup follow-up.',
+    notes: '[HISTORICAL / PAPER RECORD - PRE-ETHIOCARE HMS]\nDigitized From Paper Chart: 2026-09-19 by Almaz Tadesse (Reception)\nLegacy chart checkup follow-up.',
     record_type: 'visit'
   }).select().single();
 
   assert(!hErr2, `Historical visit 2 created (Date: ${originalDate2}, Doctor: Dr. Selamawit Tadesse)`);
+
+  // Verify that importing paper records NEVER creates a registration payment or queue entry
+  const { data: initialPayments } = await supabase.from('payments').select('id').eq('patient_id', newPatient.id);
+  const { data: initialVisits } = await supabase.from('visits').select('id').eq('patient_id', newPatient.id);
+  assert((initialPayments?.length || 0) === 0, 'Importing paper records created 0 payments (medical history only)');
+  assert((initialVisits?.length || 0) === 0, 'Importing paper records created 0 visits/queue entries');
+
+  // Test updating/editing a digitized historical record
+  const { data: updatedHist2, error: uErr } = await supabase.from('patient_history').update({
+    diagnosis: 'Routine Medical Checkup & Follow-up (Updated with Lipid Results)',
+    notes: '[HISTORICAL / PAPER RECORD - PRE-ETHIOCARE HMS]\nDigitized Paper Record (Last modified: 2026-09-19 by Almaz Tadesse)\nLegacy chart checkup follow-up.'
+  }).eq('id', hist2.id).select().single();
+
+  assert(!uErr && updatedHist2.diagnosis.includes('Updated'), 'Reception can edit/update digitized paper records');
 
   // 3. Read back historical records (Doctor View simulation)
   const { data: fetchedHistory, error: fetchErr } = await supabase
@@ -408,6 +422,7 @@ async function runLiveTests() {
   assert(fetchedHistory[1].visit_date === originalDate1, `Preserves exact original date 2: ${fetchedHistory[1]?.visit_date}`);
   assert(fetchedHistory[0].doctor_name === 'Dr. Selamawit Tadesse', 'Preserves doctor name 1');
   assert(fetchedHistory[1].doctor_name === 'Dr. Dawit Bekele', 'Preserves doctor name 2');
+  assert(fetchedHistory[0].notes.includes('Almaz Tadesse'), 'Preserves digitized_by audit attribution');
 
   // 4. Test 30-day return rule evaluation for this live patient
   const liveAssessment = determineRegistrationFee(
@@ -421,7 +436,7 @@ async function runLiveTests() {
   assert(liveAssessment.statusText === 'More than 30 days since last visit', 'Status text is "More than 30 days since last visit"');
   assert(liveAssessment.lastVisitDate === originalDate2, `Latest visit date matches most recent historical record (${originalDate2})`);
 
-  // 5. Test registration payment record creation with payment gate
+  // 5. Test registration payment record creation with payment gate ONLY when registering for a NEW visit
   const { data: regPayment, error: payErr } = await supabase.from('payments').insert({
     patient_id: newPatient.id,
     patient_name: newPatient.full_name,
@@ -432,7 +447,7 @@ async function runLiveTests() {
     reference_type: 'registration'
   }).select().single();
 
-  assert(!payErr && regPayment.id, `Registration payment created with status 'pending' and amount ${liveAssessment.fee} ETB`);
+  assert(!payErr && regPayment.id, `Registration payment created ONLY when initiating a new visit (${liveAssessment.fee} ETB)`);
 
   // 6. Clean up all test records
   console.log('Cleaning up test records from database...');

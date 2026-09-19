@@ -11,7 +11,9 @@ ALTER TABLE public.patient_history
   ADD COLUMN IF NOT EXISTS nurse_records TEXT,
   ADD COLUMN IF NOT EXISTS medicines TEXT,
   ADD COLUMN IF NOT EXISTS medical_reports TEXT,
-  ADD COLUMN IF NOT EXISTS record_source TEXT DEFAULT 'manual_historical';
+  ADD COLUMN IF NOT EXISTS record_source TEXT DEFAULT 'manual_historical',
+  ADD COLUMN IF NOT EXISTS digitized_by TEXT,
+  ADD COLUMN IF NOT EXISTS digitized_at TIMESTAMPTZ DEFAULT now();
 
 -- 2. Performance indexes for 30-day lookup and historical querying
 CREATE INDEX IF NOT EXISTS idx_patient_history_visit_date 
