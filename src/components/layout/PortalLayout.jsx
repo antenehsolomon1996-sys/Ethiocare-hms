@@ -362,7 +362,7 @@ export default function PortalLayout({ role }) {
                   </p>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {role === 'doctor' && (
+                {role === 'doctor' ? (
                   <>
                     <DropdownMenuItem onClick={() => navigate('/doctor/profile')}>
                       <User className="w-4 h-4" />
@@ -370,12 +370,15 @@ export default function PortalLayout({ role }) {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
+                ) : (
+                  <>
+                    <DropdownMenuItem onClick={() => navigate(isPharmacy ? '/pharmacy/settings' : '/owner/settings')}>
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
                 )}
-                <DropdownMenuItem onClick={() => navigate(isPharmacy ? '/pharmacy/settings' : '/owner/settings')}>
-                  <Settings className="w-4 h-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive focus:bg-destructive/5"
                   onClick={() => setDeleteOpen(true)}

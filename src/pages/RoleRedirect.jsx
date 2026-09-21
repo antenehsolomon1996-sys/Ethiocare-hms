@@ -97,7 +97,7 @@ export default function RoleRedirect() {
   // If redirect timed out or user role is unknown, show graceful recovery UI
   if (timedOut) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background relative">
         <HealthcareBackground />
         <Card className="w-full max-w-md relative z-10 border-border/60 shadow-xl bg-card/95 backdrop-blur-md">
           <CardHeader className="text-center pb-2">

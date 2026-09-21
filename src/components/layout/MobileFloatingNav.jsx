@@ -35,7 +35,7 @@ const PORTAL_NAV_ITEMS = {
     { path: '/doctor', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/doctor/patients', label: 'Patient Tracking', icon: Users },
     { path: '/doctor/queue', label: 'Visits & Queue', icon: Clock },
-    { path: '/doctor/prescriptions', label: 'Prescriptions', icon: ClipboardList },
+    { path: '/doctor/lab-orders', label: 'Lab Orders', icon: FlaskConical },
   ],
   receptionist: [
     { path: '/reception', label: 'Dashboard', icon: LayoutDashboard },

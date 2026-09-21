@@ -201,7 +201,7 @@ export default function PortalLoginPage({ portalKey = 'admin', onLoginSuccess })
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 py-8 pb-[calc(3rem+env(safe-area-inset-bottom,0px))] bg-background relative overflow-x-hidden scroll-smooth overscroll-y-none">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 py-8 pb-[calc(3rem+env(safe-area-inset-bottom,0px))] bg-background relative">
       <HealthcareBackground />
 
       <div className="w-full max-w-lg relative z-10 animate-in fade-in-50 zoom-in-95 duration-200 my-auto">

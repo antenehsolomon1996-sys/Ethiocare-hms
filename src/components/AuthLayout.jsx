@@ -49,7 +49,7 @@ export default function AuthLayout({ icon: Icon, title, subtitle, footer, childr
       </div>
 
       {/* Right panel — form */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-background px-4 py-8 sm:px-6 pb-[calc(3rem+env(safe-area-inset-bottom,0px))] overflow-x-hidden scroll-smooth overscroll-y-none">
+      <div className="flex-1 flex flex-col items-center justify-center bg-background px-4 py-8 sm:px-6 pb-[calc(3rem+env(safe-area-inset-bottom,0px))] w-full">
         <div className="w-full max-w-lg my-auto">
           {/* Mobile Hospital Brand Banner */}
           <div className="lg:hidden flex flex-col items-center justify-center mb-6 text-center">

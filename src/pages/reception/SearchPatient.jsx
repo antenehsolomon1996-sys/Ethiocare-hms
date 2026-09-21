@@ -7,11 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Search, Send } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import StatusBadge from '@/components/common/StatusBadge';
+import { buildDoctorList } from '@/lib/doctorUtils';
 
 export default function SearchPatient() {
   const [search, setSearch] = useState('');
@@ -22,14 +23,11 @@ export default function SearchPatient() {
 
   const { data: patients = [], isLoading } = useQuery({ queryKey: ['patients'], queryFn: () => ethioCareClient.entities.Patient.list('-created_date') });
   const { data: visits = [] } = useQuery({ queryKey: ['visits'], queryFn: () => ethioCareClient.entities.Visit.list('-created_date', 200) });
-  const { data: staffDoctors = [] } = useQuery({ queryKey: ['staffDoctors'], queryFn: () => ethioCareClient.entities.Staff.filter({ role: 'doctor', status: 'active' }).catch(() => []) });
-  const { data: directDoctors = [] } = useQuery({ queryKey: ['directDoctors'], queryFn: () => ethioCareClient.entities.Doctor.list().catch(() => []) });
+  const { data: staffList = [] } = useQuery({ queryKey: ['staff'], queryFn: () => ethioCareClient.entities.Staff.list().catch(() => []) });
+  const { data: directDoctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: () => ethioCareClient.entities.Doctor.list().catch(() => []) });
   
-  // Combine doctors
-  const doctors = [
-    ...directDoctors,
-    ...staffDoctors.filter(s => !directDoctors.some(d => d.id === s.id || d.full_name === s.full_name))
-  ];
+  // Authoritative unified doctor list from Staff Management
+  const doctors = useMemo(() => buildDoctorList(directDoctors, staffList), [directDoctors, staffList]);
 
   const filtered = patients.filter(p => {
     if (!search) return true;

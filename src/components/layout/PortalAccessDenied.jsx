@@ -67,7 +67,7 @@ export default function PortalAccessDenied({ portalRole, onSwitchAccount }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background relative">
       <HealthcareBackground />
 
       <Card className="max-w-md w-full border-destructive/30 shadow-2xl relative z-10 animate-in fade-in-50 zoom-in-95 duration-200">

@@ -1,48 +1,62 @@
 /**
  * Shared utility: builds unified doctor list from Doctor + Staff entities.
- * Each entry guaranteed to have: id (Doctor entity id), full_name, specialty
  *
- * Priority: Doctor entity records are preferred; Staff records fill in gaps.
+ * Owner Portal -> Staff Management is the SINGLE SOURCE OF TRUTH for active doctors.
+ * Only active staff members with role 'doctor' will be returned when staffList is available.
+ * Stale, hardcoded, or inactive doctors are strictly excluded.
  */
 export function buildDoctorList(doctorEntities = [], staffList = []) {
   const map = new Map();
 
-  // First pass: Doctor entity records (authoritative)
-  doctorEntities
+  // If staffList is provided and contains staff records, enforce Staff Management as authoritative
+  if (Array.isArray(staffList) && staffList.length > 0) {
+    const activeStaffDoctors = staffList.filter(s => s.role === 'doctor' && s.status === 'active');
+
+    activeStaffDoctors.forEach(s => {
+      const key = (s.full_name || '').trim().toLowerCase();
+      if (!key) return;
+
+      // Find matching Doctor entity record to get linked doctor entity ID and synced room info
+      const matchingDoc = (doctorEntities || []).find(d =>
+        (d.staff_id && String(d.staff_id) === String(s.id)) ||
+        (d.email && s.email && d.email.trim().toLowerCase() === s.email.trim().toLowerCase()) ||
+        (d.full_name && d.full_name.trim().toLowerCase() === key)
+      );
+
+      map.set(key, {
+        id: matchingDoc?.id || s.id,
+        staff_id: s.id,
+        full_name: s.full_name,
+        specialty: s.specialization || s.department || matchingDoc?.specialty || 'General Practice',
+        assigned_room_id: s.assigned_room_id || matchingDoc?.assigned_room_id || null,
+        assigned_room_number: s.assigned_room_number || matchingDoc?.assigned_room_number || null,
+        email: s.email || matchingDoc?.email || null,
+        status: 'active',
+        source: 'staff_management'
+      });
+    });
+
+    return Array.from(map.values());
+  }
+
+  // Graceful fallback ONLY when staffList has not loaded yet
+  (doctorEntities || [])
     .filter(d => d.status === 'active')
     .forEach(d => {
-      map.set(d.full_name, {
+      const key = (d.full_name || '').trim().toLowerCase();
+      if (!key || map.has(key)) return;
+
+      map.set(key, {
         id: d.id,
+        staff_id: d.staff_id || null,
         full_name: d.full_name,
         specialty: d.specialty || 'General Practice',
         assigned_room_id: d.assigned_room_id || null,
         assigned_room_number: d.assigned_room_number || null,
         email: d.email || null,
+        status: 'active',
         source: 'doctor_entity'
       });
-    });
-
-  // Second pass: Staff records — only if not already in map or enrich room
-  staffList
-    .filter(s => s.role === 'doctor' && s.status === 'active')
-    .forEach(s => {
-      if (!map.has(s.full_name)) {
-        map.set(s.full_name, {
-          id: null, // no Doctor entity record
-          full_name: s.full_name,
-          specialty: s.specialization || 'General Practice',
-          assigned_room_id: s.assigned_room_id || null,
-          assigned_room_number: s.assigned_room_number || null,
-          email: s.email || null,
-          source: 'staff'
-        });
-      } else {
-        const existing = map.get(s.full_name);
-        if (!existing.assigned_room_number && s.assigned_room_number) {
-          existing.assigned_room_number = s.assigned_room_number;
-          existing.assigned_room_id = s.assigned_room_id;
-        }
-      }
     });
 
   return Array.from(map.values());

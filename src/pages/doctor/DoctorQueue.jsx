@@ -310,8 +310,8 @@ export default function DoctorQueue() {
         reference_id: rx.id
       });
       queryClient.invalidateQueries({ queryKey: ['prescriptions', 'payments'] });
-      toast.success(`Prescription for ${prescForm.medicine_name} created (${totalAmount} ETB)`);
-      logAudit({ userName: selectedDoctor?.full_name, userRole: 'doctor', action: 'create', module: 'Prescription', description: `Prescribed ${prescForm.medicine_name} (${totalAmount} ETB) for ${selected.patient_name}`, recordId: rx.id, recordName: selected.patient_name });
+      toast.success(`Prescription for ${prescForm.medicine_name} added successfully`);
+      logAudit({ userName: selectedDoctor?.full_name, userRole: 'doctor', action: 'create', module: 'Prescription', description: `Prescribed ${prescForm.medicine_name} (${qty} units) for ${selected.patient_name}`, recordId: rx.id, recordName: selected.patient_name });
       notificationService.dispatch({
         title: 'New Prescription',
         message: `Prescription for ${prescForm.medicine_name.trim()} (${qty} units) ordered for ${selected.patient_name}.`,
@@ -772,7 +772,7 @@ export default function DoctorQueue() {
                         <SelectContent>
                           {availableMedicines.filter(m => m.status !== 'out_of_stock').map(m => (
                             <SelectItem key={m.id} value={m.id}>
-                              {m.name} {m.strength ? `(${m.strength})` : ''} — {m.unit_price} ETB
+                              {m.name} {m.strength ? `(${m.strength})` : ''}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -796,18 +796,6 @@ export default function DoctorQueue() {
                       <div><Label>Duration</Label><Input value={prescForm.duration} onChange={e => setPrescForm({...prescForm, duration: e.target.value})} placeholder="e.g. 7 days" /></div>
                       <div><Label>Quantity</Label><Input type="number" value={prescForm.quantity} onChange={e => setPrescForm({...prescForm, quantity: e.target.value})} /></div>
                     </div>
-
-                    {/* Calculated Price Display */}
-                    {prescForm.medicine_name && (
-                      <div className="bg-emerald-50/50 border border-emerald-200/60 rounded-lg p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">
-                          Unit Tariff: {availableMedicines.find(m => m.id === prescForm.medicine_id || m.name?.toLowerCase() === prescForm.medicine_name.trim().toLowerCase())?.unit_price || 0} ETB
-                        </span>
-                        <span className="font-bold text-emerald-700 text-sm">
-                          Billing Total: {((availableMedicines.find(m => m.id === prescForm.medicine_id || m.name?.toLowerCase() === prescForm.medicine_name.trim().toLowerCase())?.unit_price || 0) * (parseInt(prescForm.quantity) || 1)).toLocaleString()} ETB
-                        </span>
-                      </div>
-                    )}
 
                     <div><Label>Instructions</Label><Textarea value={prescForm.instructions} onChange={e => setPrescForm({...prescForm, instructions: e.target.value})} rows={2} placeholder="Take after meals with water..." /></div>
                     <Button onClick={prescribeMedicine} disabled={actionLoading}>

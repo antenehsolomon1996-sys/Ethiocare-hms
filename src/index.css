@@ -141,8 +141,6 @@ html {
 body {
   min-height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: auto;
 }
 #root {
   min-height: 100%;

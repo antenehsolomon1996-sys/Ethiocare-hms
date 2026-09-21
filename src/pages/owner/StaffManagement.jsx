@@ -317,7 +317,22 @@ export default function StaffManagement() {
     try {
       const newStatus = member.status === 'active' ? 'suspended' : 'active';
       await ethioCareClient.entities.Staff.update(member.id, { status: newStatus });
+      if (member.role === 'doctor') {
+        try {
+          const docs = await ethioCareClient.entities.Doctor.list();
+          const matched = docs.find(d => 
+            (d.staff_id && String(d.staff_id) === String(member.id)) ||
+            (d.email && member.email && d.email.toLowerCase() === member.email.toLowerCase())
+          );
+          if (matched) {
+            await ethioCareClient.entities.Doctor.update(matched.id, { status: newStatus === 'active' ? 'active' : 'inactive' });
+          }
+        } catch (e) {
+          console.warn('[StaffManagement] Doctor status sync note:', e);
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors'] });
       toast.success(newStatus === 'active' ? 'Staff reactivated' : 'Staff suspended');
     } catch (err) {
       toast.error(err.message || 'Failed to update staff status');
@@ -339,7 +354,22 @@ export default function StaffManagement() {
     if (!deleteTarget) return;
     try {
       await ethioCareClient.entities.Staff.delete(deleteTarget.id);
+      if (deleteTarget.role === 'doctor') {
+        try {
+          const docs = await ethioCareClient.entities.Doctor.list();
+          const matched = docs.find(d => 
+            (d.staff_id && String(d.staff_id) === String(deleteTarget.id)) ||
+            (d.email && deleteTarget.email && d.email.toLowerCase() === deleteTarget.email.toLowerCase())
+          );
+          if (matched) {
+            await ethioCareClient.entities.Doctor.delete(matched.id);
+          }
+        } catch (e) {
+          console.warn('[StaffManagement] Doctor delete sync note:', e);
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors'] });
       toast.success('Staff member removed');
       setDeleteTarget(null);
     } catch (err) {

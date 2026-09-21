@@ -401,7 +401,7 @@ export default function DoctorPatientDetailModal({
                         <div>
                           <p className="font-semibold text-sm">{rx.medicine_name} <span className="text-xs text-muted-foreground font-normal">({rx.dosage})</span></p>
                           <p className="text-xs text-muted-foreground">
-                            {rx.frequency} for {rx.duration} · Qty: {rx.quantity || 1} · {rx.unit_price ? `${rx.unit_price * (rx.quantity || 1)} ETB` : ''}
+                            {rx.frequency} for {rx.duration} · Qty: {rx.quantity || 1}
                           </p>
                           {rx.instructions && <p className="text-xs text-foreground/80 mt-1">Instructions: {rx.instructions}</p>}
                         </div>

@@ -82,11 +82,8 @@ export const roleConfig = {
       { path: '/doctor', label: 'Dashboard', icon: LayoutDashboard },
       { path: '/doctor/patients', label: 'Patient Tracking', icon: Users },
       { path: '/doctor/queue', label: 'Appointments / Visits', icon: Clock },
-      { path: '/doctor/prescriptions', label: 'Prescriptions', icon: Pill },
-      { path: '/doctor/medication-orders', label: 'Medication Orders', icon: Syringe },
       { path: '/doctor/lab-orders', label: 'Laboratory / Lab Orders', icon: FlaskConical },
       { path: '/doctor/ai-assistant', label: 'AI Assistant', icon: Sparkles },
-      { path: '/doctor/notifications', label: 'Notifications', icon: Bell },
       { path: '/doctor/profile', label: 'Profile / Account', icon: User },
     ]
   },
