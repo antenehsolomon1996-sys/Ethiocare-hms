@@ -1,4 +1,4 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import Sidebar from './Sidebar';
 import MobileFloatingNav from './MobileFloatingNav';
@@ -73,7 +73,7 @@ const ROLE_TO_PORTAL_KEY = {
 };
 
 const ROLE_ROUTES = {
-  owner: '/admin',
+  owner: '/owner',
   admin: '/admin',
   receptionist: '/reception',
   reception: '/reception',
@@ -157,7 +157,7 @@ export default function PortalLayout({ role }) {
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
-  // When unauthenticated, render the dedicated portal login page at this exact URL
+  // When unauthenticated, redirect to the central unified login page
   if (!user) {
     if (isLoadingAuth) {
       return (
@@ -169,17 +169,7 @@ export default function PortalLayout({ role }) {
         </div>
       );
     }
-    const portalKey = ROLE_TO_PORTAL_KEY[role] || 'admin';
-    return (
-      <PortalLoginPage
-        portalKey={portalKey}
-        onLoginSuccess={(profile) => {
-          const userRole = profile?.role ? profile.role.toLowerCase().trim() : role;
-          const dest = ROLE_ROUTES[userRole] || ROLE_ROUTES[role] || '/admin';
-          navigate(dest, { replace: true });
-        }}
-      />
-    );
+    return <Navigate to="/login" replace />;
   }
 
   // RBAC: verify the logged-in user's role matches this portal

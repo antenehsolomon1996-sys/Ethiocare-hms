@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 const ROLE_ROUTES = {
   owner: '/owner',
-  admin: '/owner',
+  admin: '/admin',
   receptionist: '/reception',
   doctor: '/doctor',
   nurse: '/nurse',

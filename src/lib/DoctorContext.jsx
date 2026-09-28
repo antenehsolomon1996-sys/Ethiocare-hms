@@ -80,6 +80,21 @@ export function DoctorProvider({ children }) {
             setSelectedDoctor(userDoctor);
             return;
           }
+
+          const fallbackDoc = {
+            id: user.id || user.staff_id || 'doc-current',
+            staff_id: user.id || user.staff_id,
+            full_name: user.full_name || 'Dr. ' + (user.email?.split('@')[0] || 'Doctor'),
+            email: user.email,
+            specialty: user.specialization || user.department || 'General Practice',
+            doctor_type: 'Physician',
+            status: user.status || 'active',
+            availability: 'available',
+            assigned_room_id: user.assigned_room_id || null,
+            assigned_room_number: user.assigned_room_number || null,
+          };
+          setSelectedDoctor(fallbackDoc);
+          return;
         }
 
         // Priority 2: If current selectedDoctor exists, verify it is still in unique list and refresh data

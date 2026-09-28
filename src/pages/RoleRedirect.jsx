@@ -7,7 +7,7 @@ import { AlertCircle, RefreshCw, LogOut } from 'lucide-react';
 import HealthcareBackground from '@/components/layout/HealthcareBackground';
 
 const ROLE_ROUTES = {
-  owner: '/admin',
+  owner: '/owner',
   admin: '/admin',
   receptionist: '/reception',
   reception: '/reception',

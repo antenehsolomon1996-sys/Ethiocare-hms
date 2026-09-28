@@ -62,13 +62,34 @@ export const authService = {
     }
 
     // 2. Direct Supabase Database Verification
-    const { data: staffMember, error: staffError } = await supabase
-      .from('staff')
-      .select('id, full_name, email, role, department, specialization, phone, status, activation_code, password_set, created_at, updated_at')
-      .eq('email', cleanEmail)
-      .maybeSingle();
+    let staffMember: any = null;
+    try {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('id, full_name, email, role, department, specialization, phone, status, activation_code, password_set, created_at, updated_at')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
 
-    if (staffError || !staffMember) {
+      if (!error && data) {
+        staffMember = data;
+      }
+    } catch (dbErr) {
+      console.warn('[authService] Supabase staff query notice:', dbErr);
+    }
+
+    // Fallback to local storage cache if network failed or record not found
+    if (!staffMember && typeof localStorage !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('ethiocare_table_Staff');
+        if (stored) {
+          const list = JSON.parse(stored);
+          const found = list.find((s: any) => s.email?.toLowerCase().trim() === cleanEmail);
+          if (found) staffMember = found;
+        }
+      } catch {}
+    }
+
+    if (!staffMember) {
       throw new Error('Invalid hospital email or credentials');
     }
 
@@ -76,7 +97,7 @@ export const authService = {
       throw new Error('Your staff account is deactivated. Please contact hospital administration.');
     }
 
-    // Strict 1:1 portal role restriction check with alias mapping
+    // Strict 1:1 portal role restriction check with alias mapping (if targetPortal was explicitly requested)
     if (targetPortal) {
       const allowed = ROLE_ALIASES[targetPortal.toLowerCase().trim()] || [targetPortal.toLowerCase().trim()];
       if (!allowed.includes(staffMember.role.toLowerCase().trim())) {
@@ -270,7 +291,7 @@ export const authService = {
           const { data: staffMember, error } = await supabase
             .from('staff')
             .select('id, full_name, email, role, department, specialization, phone, status, created_at, updated_at')
-            .eq('email', cleanEmail)
+            .ilike('email', cleanEmail)
             .maybeSingle();
 
           if (!error && staffMember) {

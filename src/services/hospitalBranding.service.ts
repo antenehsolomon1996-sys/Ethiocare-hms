@@ -19,6 +19,9 @@ export interface HospitalSettings {
   description?: string;
   accreditation_number?: string;
   dev_portal_switcher_enabled?: boolean;
+  login_role_selector_enabled?: boolean;
+  login_doctor_selector_enabled?: boolean;
+  login_quick_cards_enabled?: boolean;
   created_at?: string;
   updated_at?: string;
   updated_by?: string;
@@ -44,7 +47,10 @@ export const DEFAULT_HOSPITAL_SETTINGS: HospitalSettings = {
   working_hours: '24/7 Emergency & Inpatient · OPD Mon-Sat 8:00 AM - 8:00 PM',
   description: 'EthioCare Hospital is a premier medical institution providing compassionate, world-class healthcare in Addis Ababa, Ethiopia.',
   accreditation_number: 'EFDA-HOSP-2024-0012',
-  dev_portal_switcher_enabled: true,
+  dev_portal_switcher_enabled: false,
+  login_role_selector_enabled: false,
+  login_doctor_selector_enabled: false,
+  login_quick_cards_enabled: false,
 };
 
 export const hospitalBrandingService = {
@@ -128,7 +134,7 @@ export const hospitalBrandingService = {
     // 2. Persist to Supabase if configured
     if (isSupabaseConfigured()) {
       try {
-        const payload = {
+        const payload: Record<string, any> = {
           hospital_name: merged.hospital_name,
           hospital_tagline: merged.hospital_tagline,
           hospital_logo: merged.hospital_logo,
@@ -146,28 +152,42 @@ export const hospitalBrandingService = {
           description: merged.description,
           accreditation_number: merged.accreditation_number,
           dev_portal_switcher_enabled: merged.dev_portal_switcher_enabled,
+          login_role_selector_enabled: merged.login_role_selector_enabled,
+          login_doctor_selector_enabled: merged.login_doctor_selector_enabled,
+          login_quick_cards_enabled: merged.login_quick_cards_enabled,
           updated_at: merged.updated_at,
           updated_by: merged.updated_by,
         };
 
-        if (existing.id) {
-          const { error } = await supabase
-            .from('hospital_settings')
-            .update(payload)
-            .eq('id', existing.id);
-          if (error) throw error;
-        } else {
-          const { data, error } = await supabase
-            .from('hospital_settings')
-            .insert(payload)
-            .select()
-            .maybeSingle();
+        const attemptSave = async (dataPayload: Record<string, any>) => {
+          if (existing.id) {
+            return await supabase
+              .from('hospital_settings')
+              .update(dataPayload)
+              .eq('id', existing.id);
+          } else {
+            return await supabase
+              .from('hospital_settings')
+              .insert(dataPayload)
+              .select()
+              .maybeSingle();
+          }
+        };
 
-          if (!error && data?.id) {
-            merged.id = data.id;
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-            }
+        let result = await attemptSave(payload);
+        if (result.error && (result.error.code === '42703' || result.error.message?.includes('does not exist'))) {
+          // Fallback without new columns if Postgres table has not been migrated yet
+          const fallbackPayload = { ...payload };
+          delete fallbackPayload.login_role_selector_enabled;
+          delete fallbackPayload.login_doctor_selector_enabled;
+          delete fallbackPayload.login_quick_cards_enabled;
+          result = await attemptSave(fallbackPayload);
+        }
+
+        if (result.data && (result.data as any).id) {
+          merged.id = (result.data as any).id;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
           }
         }
       } catch (err) {

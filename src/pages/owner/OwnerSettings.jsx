@@ -49,7 +49,9 @@ export default function OwnerSettings() {
     working_hours: '',
     description: '',
     accreditation_number: '',
-    dev_portal_switcher_enabled: true
+    dev_portal_switcher_enabled: false,
+    login_role_selector_enabled: false,
+    login_doctor_selector_enabled: false,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -78,7 +80,9 @@ export default function OwnerSettings() {
         working_hours: hospital.working_hours || '24/7 Emergency & Inpatient · OPD Mon-Sat 8:00 AM - 8:00 PM',
         description: hospital.description || 'EthioCare Hospital is a premier medical institution providing compassionate, world-class healthcare in Addis Ababa, Ethiopia.',
         accreditation_number: hospital.accreditation_number || 'EFDA-HOSP-2024-0012',
-        dev_portal_switcher_enabled: hospital.dev_portal_switcher_enabled !== undefined ? Boolean(hospital.dev_portal_switcher_enabled) : true
+        dev_portal_switcher_enabled: hospital.dev_portal_switcher_enabled !== undefined ? Boolean(hospital.dev_portal_switcher_enabled) : false,
+        login_role_selector_enabled: hospital.login_role_selector_enabled !== undefined ? Boolean(hospital.login_role_selector_enabled) : false,
+        login_doctor_selector_enabled: hospital.login_doctor_selector_enabled !== undefined ? Boolean(hospital.login_doctor_selector_enabled) : false,
       });
     }
   }, [hospital]);
@@ -119,38 +123,35 @@ export default function OwnerSettings() {
 
   const handleSaveSecurity = async () => {
     if (!canManageSecurity) {
-      toast.error('Only Owner or Administrator can modify login security settings');
+      toast.error('Only Owner or Administrator can modify login page settings');
       return;
     }
 
     setIsSavingSecurity(true);
-    const previousValue = hospital?.dev_portal_switcher_enabled ?? true;
-    const newValue = form.dev_portal_switcher_enabled;
-
     try {
       await updateHospital({
         ...form,
-        dev_portal_switcher_enabled: newValue
+        login_role_selector_enabled: Boolean(form.login_role_selector_enabled),
+        login_doctor_selector_enabled: Boolean(form.login_doctor_selector_enabled),
+        dev_portal_switcher_enabled: Boolean(form.dev_portal_switcher_enabled),
       }, user?.full_name || 'Owner');
 
       await logAudit({
         userName: user?.full_name || 'Owner',
         userRole: user?.role || 'owner',
         action: 'update',
-        module: 'SecuritySettings',
-        description: `Development Portal Switcher setting changed from ${previousValue ? 'ON' : 'OFF'} to ${newValue ? 'ON' : 'OFF'}`,
-        recordId: 'dev_portal_switcher',
-        recordName: 'Development Portal Switcher'
+        module: 'LoginPageSettings',
+        description: `Updated login page controls: Role Selector=${form.login_role_selector_enabled ? 'ON' : 'OFF'}, Doctor Selector=${form.login_doctor_selector_enabled ? 'ON' : 'OFF'}, Quick Switcher=${form.dev_portal_switcher_enabled ? 'ON' : 'OFF'}`,
+        recordId: 'login_page_settings',
+        recordName: 'Login Page Settings'
       });
 
-      toast.success(`Development Portal Switcher is now ${newValue ? 'ON' : 'OFF'}!`, {
-        description: newValue
-          ? 'The portal selector is now visible on all login pages.'
-          : 'The portal selector is now completely hidden from all login pages.'
+      toast.success('Login Page Settings saved successfully!', {
+        description: `Role selector: ${form.login_role_selector_enabled ? 'ON' : 'OFF'} | Doctor selector: ${form.login_doctor_selector_enabled ? 'ON' : 'OFF'}`
       });
     } catch (err) {
-      console.error('[OwnerSettings] Security save failed:', err);
-      toast.error('Failed to update security settings');
+      console.error('[OwnerSettings] Login settings save failed:', err);
+      toast.error('Failed to update login page settings');
     } finally {
       setIsSavingSecurity(false);
     }
@@ -290,7 +291,7 @@ export default function OwnerSettings() {
               }`}
             >
               <Lock className="w-3.5 h-3.5 text-amber-500" />
-              Security / Login Settings
+              Login Page Settings
             </button>
           </div>
 
@@ -564,7 +565,7 @@ export default function OwnerSettings() {
             </Card>
           )}
 
-          {/* TAB 5: SECURITY / LOGIN SETTINGS */}
+          {/* TAB 5: LOGIN PAGE SETTINGS */}
           {activeTab === 'security' && (
             <Card className="shadow-card border-border/60">
               <CardHeader className="pb-4 border-b border-border/50">
@@ -572,76 +573,46 @@ export default function OwnerSettings() {
                   <div className="space-y-1">
                     <CardTitle className="text-base font-bold flex items-center gap-2">
                       <Lock className="w-4 h-4 text-primary" />
-                      Security & Portal Login Settings
+                      Login Page Settings
                     </CardTitle>
                     <CardDescription>
-                      Manage system-wide authentication controls, portal display preferences, and developer utilities.
+                      Configure public login page components. Customize whether staff role and provisioned doctor selectors are visible or hidden.
                     </CardDescription>
                   </div>
-                  <div className="shrink-0">
-                    {form.dev_portal_switcher_enabled ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Development Portal Switcher ● ON
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-muted text-muted-foreground border border-border">
-                        <span className="w-2 h-2 rounded-full bg-muted-foreground/50" />
-                        Development Portal Switcher ○ OFF
-                      </span>
-                    )}
+                  <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                    <Badge variant={form.login_role_selector_enabled ? "default" : "outline"} className="text-[10px]">
+                      Role Selector: {form.login_role_selector_enabled ? 'ON' : 'OFF'}
+                    </Badge>
+                    <Badge variant={form.login_doctor_selector_enabled ? "default" : "outline"} className="text-[10px]">
+                      Doctor Selector: {form.login_doctor_selector_enabled ? 'ON' : 'OFF'}
+                    </Badge>
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent className="pt-6 space-y-6">
-                {/* Setting Card */}
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-1">
-                    <h3 className="text-sm font-semibold text-foreground">
-                      Development Portal Switcher
-                    </h3>
-                    <div className="bg-muted/40 p-3 rounded-lg border-l-4 border-primary text-xs text-muted-foreground leading-relaxed">
-                      &gt; Controls whether the development portal selector is visible on login pages.
+                {/* 1. Staff Role Selector Setting */}
+                <div className="space-y-3 p-4 rounded-xl border border-border/70 bg-card/60">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">
+                        Staff Role Selector
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Controls whether the staff role tabs (Doctor, Nurse, Lab, Reception, Pharmacy, Billing, Owner) appear on the public login page.
+                      </p>
                     </div>
+                    <Badge className={form.login_role_selector_enabled ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 shrink-0" : "bg-muted text-muted-foreground border-border shrink-0"}>
+                      {form.login_role_selector_enabled ? "● ON (Visible)" : "○ OFF (Hidden - Recommended)"}
+                    </Badge>
                   </div>
 
-                  {/* Radio / Selection Options */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {/* ON Option */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {/* OFF Option (Default) */}
                     <div
-                      onClick={() => canManageSecurity && handleChange('dev_portal_switcher_enabled', true)}
-                      className={`cursor-pointer rounded-xl border p-4 transition-all ${
-                        form.dev_portal_switcher_enabled
-                          ? 'border-emerald-500 bg-emerald-500/5 shadow-xs ring-1 ring-emerald-500/30'
-                          : 'border-border bg-card hover:bg-muted/30'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-foreground">ON</span>
-                            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[10px] py-0 px-1.5 font-bold">
-                              ● Active
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            Displays the 1-click Development Portal Switcher on all login pages for developers, administrators, and staff testing.
-                          </p>
-                        </div>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
-                          form.dev_portal_switcher_enabled ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground'
-                        }`}>
-                          {form.dev_portal_switcher_enabled && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* OFF Option */}
-                    <div
-                      onClick={() => canManageSecurity && handleChange('dev_portal_switcher_enabled', false)}
-                      className={`cursor-pointer rounded-xl border p-4 transition-all ${
-                        !form.dev_portal_switcher_enabled
+                      onClick={() => canManageSecurity && handleChange('login_role_selector_enabled', false)}
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                        !form.login_role_selector_enabled
                           ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30'
                           : 'border-border bg-card hover:bg-muted/30'
                       }`}
@@ -649,13 +620,161 @@ export default function OwnerSettings() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-foreground">OFF</span>
-                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-bold text-muted-foreground">
-                              ○ Hidden
+                            <span className="font-bold text-xs text-foreground">OFF (Default / Clean)</span>
+                            <Badge variant="outline" className="text-[9px] py-0 px-1 font-bold text-muted-foreground">
+                              Recommended
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            Completely hides the Development Portal Switcher from all login pages. Staff must use normal portal credentials (Recommended for Production).
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Hides the role selector completely. Hospital staff enter email & password, and the system automatically identifies their role from the database.
+                          </p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          !form.login_role_selector_enabled ? 'border-primary bg-primary' : 'border-muted-foreground'
+                        }`}>
+                          {!form.login_role_selector_enabled && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ON Option */}
+                    <div
+                      onClick={() => canManageSecurity && handleChange('login_role_selector_enabled', true)}
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                        form.login_role_selector_enabled
+                          ? 'border-emerald-500 bg-emerald-500/5 shadow-xs ring-1 ring-emerald-500/30'
+                          : 'border-border bg-card hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-foreground">ON</span>
+                            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[9px] py-0 px-1 font-bold">
+                              Visible
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Displays the 7-role selector buttons on the public login page for manual department filtering.
+                          </p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          form.login_role_selector_enabled ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground'
+                        }`}>
+                          {form.login_role_selector_enabled && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Provisioned Doctor Selector Setting */}
+                <div className="space-y-3 p-4 rounded-xl border border-border/70 bg-card/60">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">
+                        Provisioned Doctor Selector
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Controls whether the doctor/staff selection dropdown and staff preview cards (including Dr. Selamawit Tadesse) appear on the login page.
+                      </p>
+                    </div>
+                    <Badge className={form.login_doctor_selector_enabled ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 shrink-0" : "bg-muted text-muted-foreground border-border shrink-0"}>
+                      {form.login_doctor_selector_enabled ? "● ON (Visible)" : "○ OFF (Hidden - Recommended)"}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {/* OFF Option (Default) */}
+                    <div
+                      onClick={() => canManageSecurity && handleChange('login_doctor_selector_enabled', false)}
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                        !form.login_doctor_selector_enabled
+                          ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30'
+                          : 'border-border bg-card hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-foreground">OFF (Default / Clean)</span>
+                            <Badge variant="outline" className="text-[9px] py-0 px-1 font-bold text-muted-foreground">
+                              Recommended
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Hides the doctor selector, provisioned cards, and room preview banner. Doctors sign in directly using their personal credentials.
+                          </p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          !form.login_doctor_selector_enabled ? 'border-primary bg-primary' : 'border-muted-foreground'
+                        }`}>
+                          {!form.login_doctor_selector_enabled && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ON Option */}
+                    <div
+                      onClick={() => canManageSecurity && handleChange('login_doctor_selector_enabled', true)}
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                        form.login_doctor_selector_enabled
+                          ? 'border-emerald-500 bg-emerald-500/5 shadow-xs ring-1 ring-emerald-500/30'
+                          : 'border-border bg-card hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-foreground">ON</span>
+                            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[9px] py-0 px-1 font-bold">
+                              Visible
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Displays the provisioned doctor dropdown and workspace preview card on the public login page.
+                          </p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          form.login_doctor_selector_enabled ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground'
+                        }`}>
+                          {form.login_doctor_selector_enabled && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Development / Quick Switcher Setting */}
+                <div className="space-y-3 p-4 rounded-xl border border-border/70 bg-card/60">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground">
+                        Staff Demo Credentials & Quick Switcher
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Controls whether 1-click test credentials and demo buttons are displayed.
+                      </p>
+                    </div>
+                    <Badge className={form.dev_portal_switcher_enabled ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 shrink-0" : "bg-muted text-muted-foreground border-border shrink-0"}>
+                      {form.dev_portal_switcher_enabled ? "● ON" : "○ OFF (Recommended)"}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div
+                      onClick={() => canManageSecurity && handleChange('dev_portal_switcher_enabled', false)}
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                        !form.dev_portal_switcher_enabled
+                          ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30'
+                          : 'border-border bg-card hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <span className="font-bold text-xs text-foreground">OFF (Production)</span>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Hides demo test credential buttons on all portals. Staff authenticate using actual credentials.
                           </p>
                         </div>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
@@ -665,38 +784,61 @@ export default function OwnerSettings() {
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Security Notice */}
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
-                    <Shield className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-                    <div>
-                      <span className="font-semibold block">Security Notice:</span>
-                      Turning the switcher OFF is a UI display control. All portals remain strictly protected by Supabase authentication, RLS, and role-based permissions regardless of this setting.
+                    <div
+                      onClick={() => canManageSecurity && handleChange('dev_portal_switcher_enabled', true)}
+                      className={`cursor-pointer rounded-xl border p-3.5 transition-all ${
+                        form.dev_portal_switcher_enabled
+                          ? 'border-emerald-500 bg-emerald-500/5 shadow-xs ring-1 ring-emerald-500/30'
+                          : 'border-border bg-card hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <span className="font-bold text-xs text-foreground">ON (Testing)</span>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Enables 1-click test fill shortcuts for rapid system testing.
+                          </p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          form.dev_portal_switcher_enabled ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground'
+                        }`}>
+                          {form.dev_portal_switcher_enabled && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                      </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Save Changes Button */}
-                  <div className="pt-2 flex justify-end">
-                    <Button
-                      type="button"
-                      onClick={handleSaveSecurity}
-                      disabled={isSavingSecurity || !canManageSecurity}
-                      className="gradient-primary shadow-soft gap-2"
-                    >
-                      {isSavingSecurity ? (
-                        <>
-                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Saving Setting...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
+                {/* Security Note */}
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
+                  <Shield className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                  <div>
+                    <span className="font-semibold block">Security & Role Isolation:</span>
+                    These settings control visual login form components. System security is strictly enforced at the database level: staff accounts cannot access any portal unauthorized regardless of UI selector configuration.
                   </div>
+                </div>
+
+                {/* Save Changes Button */}
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={handleSaveSecurity}
+                    disabled={isSavingSecurity || !canManageSecurity}
+                    className="gradient-primary shadow-soft gap-2"
+                  >
+                    {isSavingSecurity ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Saving Settings...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        Save Login Page Settings
+                      </>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
